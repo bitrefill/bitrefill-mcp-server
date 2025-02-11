@@ -32,7 +32,7 @@ import App from './renderer/components/App';
 import './index.css';
 
 // Create root element
-const container = document.getElementById('root');
+const container = document.getElementById('app');
 if (!container) {
   throw new Error('Root element not found');
 }

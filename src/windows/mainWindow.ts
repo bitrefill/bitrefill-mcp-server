@@ -52,6 +52,8 @@ export const createMainWindow = async (): Promise<void> => {
         url: MAIN_WINDOW_VITE_DEV_SERVER_URL 
       });
       await mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
+      mainWindow.webContents.openDevTools();
+      mainWindow.show();
     } else {
       const filePath = `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`;
       Logger.debug('Loading production file', { 

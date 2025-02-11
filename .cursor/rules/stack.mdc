@@ -2,117 +2,128 @@
 description: General best practices to apply in the project
 globs: **/*.*
 ---
-# Best Practices for Modern Electron Development with Vite and TypeScript
+# Mandatory Best Practices for Electron Development with Vite, TypeScript, and React 18
 
-This document outlines best practices for building Electron applications using Vite, TypeScript, and React, focusing on a fast, efficient, and maintainable development workflow.  It synthesizes information from several sources, including best practices from the Electron and Vite communities.
+This document outlines the *required* best practices for building Electron applications using Vite, TypeScript, and React 18. Deviations from these standards are strongly discouraged and require explicit justification. The focus is on a fast, secure, maintainable, and highly performant development workflow.
 
-## Core Principles
+## Core Principles (Non-Negotiable)
 
-*   **Speed and Efficiency:** Leverage Vite's fast build times and Hot Module Replacement (HMR) for rapid development.
-*   **Type Safety:** Utilize TypeScript for both the main and renderer processes to catch errors early and improve code maintainability.
-*   **Modularity:** Structure your application with a clear separation of concerns between the main process, renderer processes, and preload scripts.
-*   **Security:** Follow Electron's security recommendations, paying close attention to context isolation and sandboxing.
-*   **Maintainability:**  Write clean, well-documented code, and use a consistent project structure.
+*   **Speed and Efficiency:** Vite's fast build times and Hot Module Replacement (HMR) are *required*.
+*   **Absolute Type Safety:** TypeScript is mandatory for *all* code (main, renderer, preload, shared).  `any` is strictly forbidden. Use specific types or `unknown` with appropriate type narrowing.  Exceptions require explicit justification in comments *and* approval during code review.
+*   **Strict Modularity:** A rigid separation of concerns between the main process, renderer processes, and preload scripts is enforced.  Violations will be flagged during code review.
+*   **Uncompromising Security:** Electron's security recommendations are not optional. Context isolation and sandboxing are mandatory.
+*, weistent project structure are paramount. Code reviews are mandatory, and code quality will be strictly enforced.
 
-## Project Setup and Structure
+## Project Setup and Structure (Inflexible)
 
-1.  **Project Initialization:**
+1.  **Project Initiayour project. Manual setup is forbidden.
+    *   `package.json`:
+        *   Dependencies: Electron, Vite, TypeScript, React 18, etc.
+        *   Scripts: `dev`, `build`, `package`, `make`.
+        *   `main`: Points to the compiled main process entry point (e.g., `dist/main.js`).
 
-    *   Use `create-electron` or a well-maintained template like [selfint/electron-vite-ts-react-template](mdc:https:/github.com/selfint/electron-vite-ts-react-template) or [alexwkleung/Electron-ESM-Vite](mdc:https:/github.com/alexwkleung/Electron-ESM-Vite) to scaffold your project.  These templates provide a pre-configured setup with Vite, TypeScript, and often React.  Manually creating a project is also possible, as described in [Build an Electron app using Vite, TypeScript and React](mdc:https:/medium.com/@selfint/build-an-electron-app-using-vite-typescript-and-react-e98f7fc1babd).
-    *   Ensure your `package.json` includes the necessary dependencies (Electron, Vite, TypeScript, React, etc.) and scripts for development, building, and packaging.  The `main` field should point to your compiled main process entry point (e.g., `dist/main.js`).
-
-2.  **Directory Structure:**
-
-    A well-defined directory structure is crucial for maintainability.  A recommended structure is:
+2.  **Directory Structure (Mandatory):**
 
     ```
-    ├── dist/          (Compiled output)
+    ├── dist/          (Compiled output - automatically generated)
     ├── src/
     │   ├── main/      (Main process code)
     │   │   ├── index.ts     (Main process entry point)
-    │   │   ├── api.ts       (IPC handlers)
-    │   │   └── preload.ts  (Preload script - bridge to renderer)
-    │   ├── renderer/    (Renderer process code - your UI)
-    │   │   ├── index.html
-    │   │   ├── main.tsx     (Renderer entry point)
-    │   │   ├── App.tsx
-    │   │   ├── components/
-    │   │   └── ...
-    │   └── shared/      (Code shared between main and renderer)
+    │   │   ├── ipc/         (IPC handlers, strictly organized)
+    │   │   │   ├── index.ts (Main IPC handler file - aggregation point)
+    │   │   │   └── modules/ (Specific IPC modules, one per feature)
+    │   │   │       └── serverManagement.ts (Example)
+    │   │   └── preload.ts  (Preload script - *only* expose necessary APIs)
+    │   ├── renderer/    (Renderer process code - your React 18 application)
+    │   │   ├── index.html   (Entry HTML)
+    │   │   ├── index.tsx    (Renderer entry point - use createRoot)
+    │   │   ├── App.tsx      (Root component)
+    │   │   ├── components/  (Reusable UI components - PascalCase)
+    │   │   │   └── [ComponentName]/
+    │   │   │       ├── [ComponentName].tsx
+    │   │   │       ├── [ComponentName].test.tsx  (Mandatory tests)
+    │   │   │       ├── [ComponentName].module.css (Scoped styles)
+    │   │   │       └── index.ts  (Component export)
+    │   │   ├── hooks/       (Custom React hooks - use prefix)
+    │   │   ├── services/    (API interaction, data fetching - separate logic)
+    │   │   ├── store/       (State management - Zustand or Redux Toolkit)
+    │   │   ├── types/       (TypeScript types specific to the renderer)
+    │   │   └── utils/       (Utility functions - pure functions only)
+    │   └── shared/      (Code shared between main and renderer - MINIMIZE)
     │       └── types.ts   (Shared type definitions)
-    ├── public/        (Static assets)
+    ├── public/        (Static assets - AVOID IF POSSIBLE. Bundle instead.)
     ├── package.json
-    ├── tsconfig.json
-    ├── tsconfig-electron.json  (Separate config for main process)
-    └── vite.config.ts
+    ├── tsconfig.json    (Base TypeScript configuration - strict mode)
+    ├── tsconfig-electron.json  (Main process - extends base, "module": "CommonJS")
+    └── vite.config.ts   (Vite configuration - renderer and main)
     ```
 
-    *   **`src/main`:** Contains the Electron main process code.
-    *   **`src/renderer`:** Contains the renderer process code (your React application).
-    *   **`src/shared`:**  Houses code that needs to be used by both the main and renderer processes (e.g., type definitions, utility functions).  This avoids duplication and ensures consistency.
-    *   **`dist`:** The output directory for compiled code.  Electron loads the application from here.
-    *   **`public`:** Static assets that are copied directly to the `dist` folder.
-    *   Separate TypeScript configurations (`tsconfig.json` and `tsconfig-electron.json`) are recommended for the renderer and main processes, respectively. The main process configuration should target CommonJS modules (`"module": "CommonJS"` in `tsconfig-electron.json`).
+    *   **`src/main`:** Electron main process. IPC handlers *must* be modularized within `ipc/modules`.
+    *   **`src/renderer`:** React 18 application. Strict component-based structure.  Components *must* have tests and scoped styles.
+    *   **`src/shared`:** *Minimize* shared code. Primarily for type definitions.  Avoid logic.
+    *   **`dist`:**  Autom** Avoid using `public`. Prefer bundling assets.
 
 3.  **TypeScript Configuration:**
 
-    *   Use separate `tsconfig.json` files for the main and renderer processes. This allows you to tailor compiler options to each environment.
-    *   The main process `tsconfig.json` (often named `tsconfig-electron.json`) should specify `"module": "CommonJS"` and `"outDir": "dist"`.
-    *   Extend a base `tsconfig.json` in your specialized configs to avoid duplication.
-    *   Define global types for your `backend` object (or whatever you name your inter-process communication bridge) in a `globals.d.ts` file within the `src/electron` directory, as recommended in [Build an Electron app using Vite, TypeScript and React](mdc:https:/medium.com/@selfint/build-an-electron-app-using-vite-typescript-and-react-e98f7fc1babd).
+    *   Separate `tsconfig.json` (base) and `tsconfig-electron.json` (main process) are *mandatory*.
+    *   `tsconfig-electron.json`: `"module": "CommonJS"`, `"outDir": "dist"`, extends `tsconfig.json`.
+    *   *Strict* TypeScript rules: `noImplicitAny`, `strictNulltly Enforced)
 
-## Development Workflow
+1.  **HMR and Hot Reloading:**
 
-1.  **Hot Module Replacement (HMR) and Hot Reloading:**
-
-    *   Vite provides excellent HMR support for the renderer process. Changes to your React components will be reflected instantly in the browser window without a full reload.
-    *   For the main process and preload scripts, use a tool like `tsc-watch` (as shown in [Build an Electron app using Vite, TypeScript and React](mdc:https:/medium.com/@selfint/build-an-electron-app-using-vite-typescript-and-react-e98f7fc1babd)) or the built-in hot reloading capabilities of `electron-vite` ([electron-vite.org/guide/](mdc:https:/electron-vite.org/guide)). This automatically restarts the Electron process when changes are detected in the main process or preload scripts.  The `concurrently` package can be used to run Vite and `tsc-watch` simultaneously.
-    *   Alternatively, use a custom HMR solution like the one in [alexwkleung/Electron-ESM-Vite](mdc:https:/github.com/alexwkleung/Electron-ESM-Vite), which uses Chokidar to watch for file changes and restart the Electron process.
+    *   Vite's HMRuired*.
+    *   `electron-vite`'s built-in hot reloading for the main process is *required*.
+    *   No manual restarts.
 
 2.  **Inter-Process Communication (IPC):**
 
-    *   Use the `ipcMain` and `ipcRenderer` modules for communication between the main and renderer processes.
-    *   Define a `preload` script (`src/main/preload.ts`) to expose specific functions to the renderer process. This acts as a secure bridge between the renderer's isolated context and the main process's Node.js environment.
-    *   Create a strongly-typed API for your IPC using TypeScript interfaces. This improves code clarity and helps prevent errors.  This is often done by creating a `backend` object (or similar) that wraps `ipcRenderer.invoke` calls, as described in [Build an Electron app using Vite, TypeScript and React](mdc:https:/medium.com/@selfint/build-an-electron-app-using-vite-typescript-and-react-e98f7fc1babd).
-    *   Avoid exposing the entire `ipcRenderer` object directly to the renderer. Only expose specific, well-defined functions.
+    *   `ipcMain` and `ipcRenderer` *only*.
+    *   `preload.ts`: Expose *specific*, *typed* functionposure.
+    *   Strongly-typed API: Create a `backend` object (or similar) to wrap `ipcRenderer.invoke` calls.  This object *must* be defined with clear interfaces.
 
 3.  **Debugging:**
 
-    *   Use your browser's developer tools to debug the renderer process.
-    *   For the main process, you can use a debugger like the one built into VS Code. Attach the debugger to the running Electron process.  `electron-vite` provides guidance on debugging ([electron-vite.org/guide/](mdc:https:/electron-vite.org/guide)).
+    *   Browser's dev tools for the renderer.
+    *   VS Code's debugger for the main process (attach to the running process).
 
-## Building and Packaging
+## Building and Packaging (Mandatory)
 
 1.  **Build Process:**
 
-    *   Use `vite build` to build the renderer process.
-    *   Use `tsc -p tsconfig-electron.json` to compile the main process code.
-    *   Your `package.json` scripts should orchestrate these build steps.
+    *   `vite build` (renderer).
+    *   `tsc -p tsconfig-electron.json` (main).
+    *   `package.json` scripts *must* orchestrate these.
 
 2.  **Packaging:**
 
-    *   Use a tool like `electron-forge` or `electron-builder` to package your application for distribution.  `electron-forge` is shown in the example `package.json` in [Build an Electron app using Vite, TypeScript and React](mdc:https:/medium.com/@selfint/build-an-electron-app-using-vite-typescript-and-react-e98f7fc1babd).
-    *   Configure your packaging tool to include the necessary files from the `dist` directory.
+    *   `electron-forge` is *required*.
+    *   Configuration *must* include necessary files from `dist`.
 
 3.  **Code Signing:**
 
-    *   Code sign your application for production builds, especially on macOS and Windows. This is crucial for security and user trust.
+    *   Code signing is *mandatory* for producttion:** `contextIsolation: true` is *mandatory*.
+*   **Sandboxing:** Sandboxing is *mandatory*.
+*   **Preload Scripts:** Expose *only* the absolute minimum necessary APIs.
+*   **Content Security Policy (CSP):** A strong CSP is *mandatory*.
+*   **Remote Content:** Loading remote content is strictly forbidden.
+*   **Regular Updates:** Automated dependency updates (e.g., Dependabot) are *required*.
 
-## Security Considerations
+## React 18 t` from `react-dom/client` for mounting.
+*   Leverage React 18 features (e.g., concurrent rendering).
+*   Functional components and hooks *only*. Class components are forbidden.
+*   Strict component file structure (see above).
 
-*   **Context Isolation:** Enable context isolation (`contextIsolation: true` in `webPreferences`). This is a critical security feature that prevents the renderer process from directly accessing Node.js APIs.
-*   **Sandboxing:** Consider enabling sandboxing for an additional layer of security.  [alexwkleung/Electron-ESM-Vite](mdc:https:/github.com/alexwkleung/Electron-ESM-Vite) mentions using an unsandboxed renderer with context isolation for ESM preload scripts.  Carefully evaluate the security implications of this approach.  If possible, use a sandboxed renderer.
-*   **Preload Scripts:** Use preload scripts to expose only the necessary APIs to the renderer process. Avoid exposing unnecessary functionality.
-*   **Content Security Policy (CSP):** Implement a strong CSP to mitigate the risk of cross-site scripting (XSS) attacks.
-*   **Remote Content:** Be extremely cautious when loading remote content.  If possible, avoid loading remote content entirely.  If you must load remote content, use a `webview` tag and carefully validate the content.
-*   **Regular Updates:** Keep Electron and your dependencies up to date to patch security vulnerabilities.
+## Code Style and Linting
 
-## Advanced Topics
+*   ESLint and Prettier are *mandatory*.
+*   Use the provided `.eslintrc.json` (or a stricter version).
+*   Consistent code style is enforced.  No deviations.
 
-*   **Source Code Protection:**  `electron-vite` supports using V8 bytecode to protect your source code ([electron-vite.org/guide/](mdc:https:/electron-vite.org/guide)).
-*   **Native Modules:** If you need to use native Node.js modules, you'll need to configure Vite to handle them correctly. This often involves using the `native_modules` configuration option in `electron-vite`.
-*   **Multiple Windows:**  For applications with multiple windows, manage the creation and communication of these windows in the main process.  Each window will have its own renderer process.
+## Testing
+* Unit tests are mandatory ons.
+* Integration tests for critical workflows are highly recommended.
+* End-to-end tests using a framework like Playwright are recommended.
 
 ## Conclusion
 
-By following these best practices, you can create robust, secure, and maintainable Electron applications using Vite and TypeScript. The combination of Vite's speed, TypeScript's type safety, and Electron's cross-platform capabilities provides a powerful foundation for building modern desktop applications. Remember to prioritize security and follow Electron's security recommendations throughout the development process.
+These best practices are *mandatory*. Adherence is critical for project success and maintainability.  Code reviews will enforce these standards.

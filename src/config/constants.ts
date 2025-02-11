@@ -15,7 +15,13 @@ export const PATHS = {
       : path.join(process.cwd(), "src/assets");
     return path.join(RESOURCES_PATH, ...paths);
   },
-  getPreloadPath: (): string => path.join(__dirname, "../preload.js"),
+  getPreloadPath: (): string => {
+    const preloadPath = app.isPackaged
+      ? path.join(__dirname, "../preload.js")
+      : path.join(process.cwd(), ".vite/build/preload.js");
+    Logger.debug("Preload path", { preloadPath });
+    return preloadPath;
+  },
 } as const;
 
 export const TRAY_ICONS = {
