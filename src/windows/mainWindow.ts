@@ -2,6 +2,9 @@ import { BrowserWindow } from 'electron';
 import { WINDOW_CONFIG, PATHS } from '../config/constants';
 import Logger from '../utils/logger';
 
+declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
+declare const MAIN_WINDOW_VITE_NAME: string;
+
 const MODULE = 'MainWindow';
 let mainWindow: BrowserWindow | null = null;
 let isForceQuitting = false;
@@ -36,6 +39,8 @@ export const createMainWindow = async (): Promise<void> => {
       ...WINDOW_CONFIG,
       webPreferences: {
         preload: PATHS.getPreloadPath(),
+        contextIsolation: true,
+        nodeIntegration: false
       },
     });
 

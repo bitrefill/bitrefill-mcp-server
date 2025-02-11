@@ -26,6 +26,21 @@
  * ```
  */
 
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import App from './renderer/components/App';
 import './index.css';
 
-console.log('👋 This message is being logged by "renderer.ts", included via Vite');
+// Create root element
+const container = document.getElementById('root');
+if (!container) {
+  throw new Error('Root element not found');
+}
+
+// Create React root and render app
+const root = createRoot(container);
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);

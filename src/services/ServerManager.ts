@@ -1,14 +1,17 @@
 import Logger from '../utils/logger';
+import { McpServerManager } from './mcp/McpServerManager';
 
 export class ServerManager {
   private isRunning = false;
   private readonly MODULE = 'ServerManager';
+  private mcpManager: McpServerManager;
 
   constructor() {
     Logger.info('Initializing server manager', { module: this.MODULE });
+    this.mcpManager = new McpServerManager();
   }
 
-  public start(): void {
+  public async start(): Promise<void> {
     Logger.debug('Attempting to start server', { 
       module: this.MODULE, 
       method: 'start',
@@ -24,7 +27,7 @@ export class ServerManager {
     }
 
     try {
-      // Add server start logic here
+      await this.mcpManager.start();
       this.isRunning = true;
       Logger.info('Server started successfully', { 
         module: this.MODULE, 
@@ -55,7 +58,7 @@ export class ServerManager {
     }
 
     try {
-      // Add server stop logic here
+      this.mcpManager.stop();
       this.isRunning = false;
       Logger.info('Server stopped successfully', { 
         module: this.MODULE, 
@@ -92,13 +95,38 @@ export class ServerManager {
     }
   }
 
-  public getStatus(): boolean {
+  public getStatus(): { 
+    isRunning: boolean;
+    mcp: { notes: boolean; timer: boolean; }
+  } {
     Logger.debug('Getting server status', { 
       module: this.MODULE, 
       method: 'getStatus',
       status: this.isRunning 
     });
-    return this.isRunning;
+    return {
+      isRunning: this.isRunning,
+      mcp: this.mcpManager.getStatus()
+    };
+  }
+
+  public toggleMcpServer(server: 'notes' | 'timer'): void {
+    Logger.debug('Toggling MCP server', {
+      module: this.MODULE,
+      method: 'toggleMcpServer',
+      server
+    });
+
+    try {
+      this.mcpManager.toggleServer(server);
+    } catch (error) {
+      Logger.error('Failed to toggle MCP server', error as Error, {
+        module: this.MODULE,
+        method: 'toggleMcpServer',
+        server
+      });
+      throw error;
+    }
   }
 
   public cleanup(): void {
