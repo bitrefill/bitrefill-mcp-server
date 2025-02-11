@@ -1,7 +1,10 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import { z } from "zod";
-import Logger from "../../utils/logger";
+import Logger from "../../../utils/logger";
+import { TransportConfig, IMcpServerInstance } from "../shared/types";
+import { ExpressServer } from "../ExpressServer";
 
 interface Timer {
   id: string;
@@ -12,11 +15,11 @@ interface Timer {
   createdAt: Date;
 }
 
-export class TimerServer {
+export class TimerServer implements IMcpServerInstance {
   private server: McpServer;
   private timers: Map<string, Timer> = new Map();
   private intervals: Map<string, NodeJS.Timeout> = new Map();
-  private isEnabled = true;
+  private isEnabled = false;
   private readonly MODULE = 'TimerServer';
 
   constructor() {
@@ -212,19 +215,31 @@ export class TimerServer {
     return {};
   }
 
-  public async start() {
+  public async start(transportConfig: TransportConfig): Promise<void> {
     try {
-      const transport = new StdioServerTransport();
+      let transport;
+      if (transportConfig.type === 'sse') {
+        if (!transportConfig.getTransport) {
+          throw new Error('SSE transport requires getTransport function');
+        }
+        transport = transportConfig.getTransport('timer');
+        if (!transport) {
+          throw new Error('Failed to get SSE transport for timer server');
+        }
+      } else {
+        transport = new StdioServerTransport();
+      }
+
       await this.server.connect(transport);
       this.isEnabled = true;
-      Logger.info('Timer MCP server started', { module: this.MODULE });
+      Logger.info('Timer MCP server started', { module: this.MODULE, transport: transportConfig.type });
     } catch (error) {
       Logger.error('Failed to start Timer MCP server', error as Error, { module: this.MODULE });
       throw error;
     }
   }
 
-  public stop() {
+  public async stop(): Promise<void> {
     // Stop all running timers
     for (const [id, timer] of this.timers.entries()) {
       if (timer.isRunning) {

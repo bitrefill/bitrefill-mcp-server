@@ -1,7 +1,10 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import { z } from "zod";
-import Logger from "../../utils/logger";
+import Logger from "../../../utils/logger";
+import { TransportConfig } from "../shared/types";
+import { IMcpServerInstance } from "../shared/types";
 
 interface Note {
   id: string;
@@ -11,25 +14,48 @@ interface Note {
   updatedAt: Date;
 }
 
-export class NotesServer {
-  private server: McpServer;
+export class NotesServer implements IMcpServerInstance {
+  private mcpServer: McpServer | null = null;
   private notes: Map<string, Note> = new Map();
-  private isEnabled = true;
+  private isEnabled = false;
   private readonly MODULE = 'NotesServer';
 
-  constructor() {
-    this.server = new McpServer({
+  public async start(transportConfig: TransportConfig): Promise<void> {
+    if (this.isEnabled) {
+      Logger.warn('Notes server already running', { module: this.MODULE });
+      return;
+    }
+
+    this.mcpServer = new McpServer({
       name: "notes-server",
       version: "1.0.0",
     });
 
+    let transport;
+    if (transportConfig.type === 'sse') {
+      if (!transportConfig.getTransport) {
+        throw new Error('SSE transport requires getTransport function');
+      }
+      transport = transportConfig.getTransport('notes');
+      if (!transport) {
+        throw new Error('Failed to get SSE transport for notes server');
+      }
+    } else {
+      transport = new StdioServerTransport();
+    }
+
+    await this.mcpServer.connect(transport);
+
+    // Setup tools
     this.setupTools();
-    Logger.info('Notes MCP server initialized', { module: this.MODULE });
+
+    this.isEnabled = true;
+    Logger.info('Notes server started', { module: this.MODULE });
   }
 
   private setupTools() {
     // Create note
-    this.server.tool(
+    this.mcpServer?.tool(
       "create-note",
       "Create a new note",
       {
@@ -68,7 +94,7 @@ export class NotesServer {
     );
 
     // List notes
-    this.server.tool(
+    this.mcpServer?.tool(
       "list-notes",
       "List all notes",
       {},
@@ -99,7 +125,7 @@ export class NotesServer {
     );
 
     // Delete note
-    this.server.tool(
+    this.mcpServer?.tool(
       "delete-note",
       "Delete a note by ID",
       {
@@ -135,19 +161,7 @@ export class NotesServer {
     );
   }
 
-  public async start() {
-    try {
-      const transport = new StdioServerTransport();
-      await this.server.connect(transport);
-      this.isEnabled = true;
-      Logger.info('Notes MCP server started', { module: this.MODULE });
-    } catch (error) {
-      Logger.error('Failed to start Notes MCP server', error as Error, { module: this.MODULE });
-      throw error;
-    }
-  }
-
-  public stop() {
+  public async stop(): Promise<void> {
     this.isEnabled = false;
     Logger.info('Notes MCP server stopped', { module: this.MODULE });
   }

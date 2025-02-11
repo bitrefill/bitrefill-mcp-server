@@ -11,8 +11,12 @@ if (require('electron-squirrel-startup')) {
   app.quit();
 }
 
-// Initialize server manager
-const serverManager = new ServerManager();
+// Initialize server manager with SSE transport configuration
+const serverManager = new ServerManager({
+  type: 'sse',
+  port: 3000,
+  basePath: '/mcp'  // Base path for MCP servers
+} as const);  // Use const assertion to help TypeScript infer the correct type
 
 // IPC handlers for server management
 ipcMain.handle('server:getStatus', () => {

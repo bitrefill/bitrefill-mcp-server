@@ -1,14 +1,15 @@
 import Logger from '../utils/logger';
-import { McpServerManager } from './mcp/McpServerManager';
+import { McpServerManager } from './mcp/manager/McpServerManager';
+import { TransportConfig } from './mcp/shared/types';
 
 export class ServerManager {
   private isRunning = false;
   private readonly MODULE = 'ServerManager';
   private mcpManager: McpServerManager;
 
-  constructor() {
+  constructor(transportConfig: TransportConfig = { type: 'stdio' }) {
     Logger.info('Initializing server manager', { module: this.MODULE });
-    this.mcpManager = new McpServerManager();
+    this.mcpManager = new McpServerManager(transportConfig);
   }
 
   public async start(): Promise<void> {
@@ -42,7 +43,7 @@ export class ServerManager {
     }
   }
 
-  public stop(): void {
+  public async stop(): Promise<void> {
     Logger.debug('Attempting to stop server', { 
       module: this.MODULE, 
       method: 'stop',
@@ -58,7 +59,7 @@ export class ServerManager {
     }
 
     try {
-      this.mcpManager.stop();
+      await this.mcpManager.stop();
       this.isRunning = false;
       Logger.info('Server stopped successfully', { 
         module: this.MODULE, 
@@ -73,7 +74,7 @@ export class ServerManager {
     }
   }
 
-  public toggle(): void {
+  public async toggle(): Promise<void> {
     Logger.debug('Toggling server state', { 
       module: this.MODULE, 
       method: 'toggle',
@@ -82,9 +83,9 @@ export class ServerManager {
 
     try {
       if (this.isRunning) {
-        this.stop();
+        await this.stop();
       } else {
-        this.start();
+        await this.start();
       }
     } catch (error) {
       Logger.error('Failed to toggle server state', error as Error, { 
@@ -97,39 +98,34 @@ export class ServerManager {
 
   public getStatus(): { 
     isRunning: boolean;
-    mcp: { notes: boolean; timer: boolean; }
+    mcp: Record<string, boolean>;
   } {
-    Logger.debug('Getting server status', { 
-      module: this.MODULE, 
-      method: 'getStatus',
-      status: this.isRunning 
-    });
     return {
       isRunning: this.isRunning,
       mcp: this.mcpManager.getStatus()
     };
   }
 
-  public toggleMcpServer(server: 'notes' | 'timer'): void {
+  public async toggleMcpServer(id: string): Promise<void> {
     Logger.debug('Toggling MCP server', {
       module: this.MODULE,
       method: 'toggleMcpServer',
-      server
+      server: id
     });
 
     try {
-      this.mcpManager.toggleServer(server);
+      await this.mcpManager.toggleServer(id);
     } catch (error) {
       Logger.error('Failed to toggle MCP server', error as Error, {
         module: this.MODULE,
         method: 'toggleMcpServer',
-        server
+        server: id
       });
       throw error;
     }
   }
 
-  public cleanup(): void {
+  public async cleanup(): Promise<void> {
     Logger.info('Starting server cleanup', { 
       module: this.MODULE, 
       method: 'cleanup',
@@ -137,7 +133,7 @@ export class ServerManager {
     });
 
     if (this.isRunning) {
-      this.stop();
+      await this.stop();
     }
 
     Logger.info('Server cleanup completed', { 
