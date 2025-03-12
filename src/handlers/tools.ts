@@ -22,7 +22,7 @@ export function registerToolHandlers(server: Server): void {
       tools: [
         {
           name: "search",
-          description: "Search for gift cards, esims, mobile topups and more",
+          description: "Search for gift cards, esims, mobile topups and more. It's suggested to use the `categories` tool before searching for products, to have a better understanding of what's available.",
           inputSchema: {
             type: "object",
             properties: {
@@ -72,7 +72,7 @@ export function registerToolHandlers(server: Server): void {
         },
         {
           name: "categories",
-          description: "Get the full product type/categories map",
+          description: "Get the full product type/categories map. It's suggested to use this tool to get the categories and then use the `search` tool to search for products in a specific category.",
           inputSchema: {
             type: "object",
             properties: {},

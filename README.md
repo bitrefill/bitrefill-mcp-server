@@ -45,6 +45,9 @@ src/
 - `detail` - Get detailed information about a product
   - Required: `id` (product identifier)
 
+- `categories` - Get the full product type/categories map
+  - No required parameters
+
 ## Development
 
 Install dependencies:
