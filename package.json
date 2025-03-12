@@ -1,13 +1,13 @@
 {
-  "name": "bitrefill-mcp",
-  "version": "0.1.0",
+  "name": "bitrefill-mcp-server",
+  "version": "0.1.1",
   "description": "Shop for gift cards, mobile refills, and digital services on Bitrefill using cryptocurrency",
   "keywords": ["bitrefill", "gift cards", "cryptocurrency", "esims", "mcp", "model context protocol"],
   "author": "Bitrefill",
   "license": "MIT",
   "type": "module",
   "bin": {
-    "bitrefill-mcp": "./build/index.js"
+    "bitrefill-mcp-server": "./build/index.js"
   },
   "files": [
     "build"
