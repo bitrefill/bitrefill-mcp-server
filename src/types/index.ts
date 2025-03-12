@@ -74,6 +74,18 @@ export interface SearchResults {
 }
 
 /**
+ * Product types and their associated categories
+ */
+export interface ProductCategoriesMap {
+  giftcards: string[];
+  refills: string[];
+  bills: string[];
+  esims: string[];
+  "crypto-utils": string[];
+  [key: string]: string[];
+}
+
+/**
  * API response interface for Bitrefill search
  */
 export interface BitrefillSearchResponse {
@@ -94,13 +106,7 @@ export interface BitrefillSearchResponse {
     [key: string]: any;
   }>;
   totalCount?: number;
-  categories?: {
-    giftcards?: string[];
-    refills?: string[];
-    bills?: string[];
-    esims?: string[];
-    [key: string]: string[] | undefined;
-  };
+  categories?: ProductCategoriesMap;
   [key: string]: any;
 }
 
