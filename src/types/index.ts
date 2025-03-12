@@ -46,6 +46,7 @@ export interface SearchResultItem {
   id: string;
   name: string;
   type: string;
+  url: string;
   _priceRange?: string;
   _ratingValue?: number;
   _reviewCount?: number;
