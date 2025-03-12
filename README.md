@@ -1,29 +1,49 @@
-# bitrefill-mcp MCP Server
+# Bitrefill MCP Server
 
-Shop on Bitrefill
+A TypeScript-based MCP server that provides access to Bitrefill services, allowing you to search for gift cards, mobile topups, and more. This server implements the Model Context Protocol to expose Bitrefill functionality to AI assistants.
 
-This is a TypeScript-based MCP server that implements a simple notes system. It demonstrates core MCP concepts by providing:
+## How It Works
 
-- Resources representing text notes with URIs and metadata
-- Tools for creating new notes
-- Prompts for generating summaries of notes
+The server operates using the Model Context Protocol (MCP) to communicate with Claude and similar AI assistants. It:
+
+1. Runs as a standalone process using stdio for communication
+2. Registers resources and tools for accessing Bitrefill services
+3. Interfaces with the Bitrefill API to provide product search and details
+4. Returns structured JSON responses that can be processed by AI assistants
+
+### Architecture
+
+The app server follows this architecture:
+
+```
+src/
+├── index.ts                # Main entry point
+├── constants/              # Static data
+│   └── categories.ts       # Product categories
+├── handlers/               # MCP request handlers
+│   ├── resources.ts        # Resource endpoints
+│   └── tools.ts            # Tool implementations
+├── services/               # API services
+│   ├── products.ts         # Product details service
+│   └── search.ts           # Search functionality
+├── types/                  # TypeScript definitions
+│   └── index.ts            # Types for API responses
+└── utils/                  # Utility functions
+    └── index.ts            # Error logging, etc.
+```
 
 ## Features
 
 ### Resources
-- List and access notes via `note://` URIs
-- Each note has a title, content and metadata
-- Plain text mime type for simple content access
+- `bitrefill://categories` - List available product categories on Bitrefill
 
 ### Tools
-- `create_note` - Create new text notes
-  - Takes title and content as required parameters
-  - Stores note in server state
-
-### Prompts
-- `summarize_notes` - Generate a summary of all stored notes
-  - Includes all note contents as embedded resources
-  - Returns structured prompt for LLM summarization
+- `search` - Search for gift cards, esims, mobile topups and more
+  - Required: `query` (e.g., 'Amazon', 'Netflix', 'AT&T' or '*' for all)
+  - Optional: `country`, `language`, `limit`, `skip`, `category`
+  
+- `detail` - Get detailed information about a product
+  - Required: `id` (product identifier)
 
 ## Development
 
@@ -52,8 +72,8 @@ On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
 ```json
 {
   "mcpServers": {
-    "bitrefill-mcp": {
-      "command": "/path/to/bitrefill-mcp/build/index.js"
+    "bitrefill": {
+      "command": "node /path/to/bitrefill-mcp/build/index.js"
     }
   }
 }
