@@ -1,8 +1,15 @@
 {
   "name": "bitrefill-mcp-server",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Shop for gift cards, mobile refills, and digital services on Bitrefill using cryptocurrency",
-  "keywords": ["bitrefill", "gift cards", "cryptocurrency", "esims", "mcp", "model context protocol"],
+  "keywords": [
+    "bitrefill",
+    "gift cards",
+    "cryptocurrency",
+    "esims",
+    "mcp",
+    "model context protocol"
+  ],
   "author": "Bitrefill",
   "license": "MIT",
   "type": "module",
