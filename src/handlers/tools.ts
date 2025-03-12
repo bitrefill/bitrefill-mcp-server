@@ -6,6 +6,7 @@ import type { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { SearchOptions } from "../types/index.js";
 import { SearchService } from "../services/search.js";
 import { ProductService } from "../services/products.js";
+import { productCategories } from "../constants/categories.js";
 
 /**
  * Register tool handlers with the server
@@ -67,6 +68,15 @@ export function registerToolHandlers(server: Server): void {
               },
             },
             required: ["id"],
+          },
+        },
+        {
+          name: "categories",
+          description: "Get the full product type/categories map",
+          inputSchema: {
+            type: "object",
+            properties: {},
+            required: [],
           },
         },
       ],
@@ -159,6 +169,17 @@ export function registerToolHandlers(server: Server): void {
             isError: true,
           };
         }
+      }
+
+      case "categories": {
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(productCategories, null, 2),
+            },
+          ],
+        };
       }
 
       default:
