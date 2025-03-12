@@ -1,32 +1,38 @@
-import { Product } from "../types/index.js";
+import { Product, ProductDetailResponse } from "../types/index.js";
+import { logError } from "../utils/index.js";
 
 /**
  * Service for product operations
  */
 export class ProductService {
+  private static readonly BASE_URL = "https://www.bitrefill.com/api/product";
+  
   /**
    * Get product details by ID
    * @param id - Product ID
-   * @returns Product details
+   * @returns ProductDetailResponse with complete product details
+   * @throws Error if the API request fails
    */
-  public static getProductDetails(id: string): Product {
-    // This is a static implementation for demonstration
-    // In a real implementation, this would call an API or database
-    return {
-      id: id,
-      name: id === "amazon-us" ? "Amazon US Gift Card" : 
-           id === "steam" ? "Steam Gift Card" : 
-           id === "att-prepaid" ? "AT&T Prepaid" : 
-           id === "netflix" ? "Netflix Gift Card" : 
-           id === "uber" ? "Uber Gift Card" : "Unknown Product",
-      description: "Use this digital code to shop for millions of items at competitive prices",
-      denominations: [25, 50, 100, 200],
-      country: "United States",
-      category: id === "amazon-us" ? "Gift Cards" : 
-               id === "steam" ? "Gaming" : 
-               id === "att-prepaid" ? "Mobile Topup" : 
-               id === "netflix" ? "Entertainment" : 
-               id === "uber" ? "Travel" : "Unknown"
-    };
+  public static async getProductDetails(id: string): Promise<ProductDetailResponse> {
+    try {
+      const url = `${this.BASE_URL}/${id}`;
+      
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          "accept": "application/json",
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}`);
+      }
+
+      return await response.json() as ProductDetailResponse;
+    } catch (error) {
+      logError(error instanceof Error ? error : new Error(String(error)), "ProductService");
+      // Rethrow the error instead of providing a fallback
+      throw error;
+    }
   }
 }

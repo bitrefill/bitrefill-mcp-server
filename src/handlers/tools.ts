@@ -137,16 +137,28 @@ export function registerToolHandlers(server: Server): void {
 
       case "detail": {
         const id = String(request.params.arguments?.id || "");
-        const productDetail = ProductService.getProductDetails(id);
+        try {
+          const productDetail = await ProductService.getProductDetails(id);
 
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(productDetail, null, 2),
-            },
-          ],
-        };
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(productDetail, null, 2),
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: `Error fetching product details: ${error instanceof Error ? error.message : String(error)}`,
+              },
+            ],
+            isError: true,
+          };
+        }
       }
 
       default:

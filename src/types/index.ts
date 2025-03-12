@@ -115,3 +115,116 @@ export interface Order {
   amount_btc: string;
   expires_in: string;
 }
+
+/**
+ * Product Detail Response interface for the complete product details from API
+ */
+export interface ProductDetailResponse {
+  _id: string;
+  slug: string;
+  name: string;
+  baseName: string;
+  noIndex?: boolean;
+  logoBackground?: string;
+  logoForeground?: string;
+  isLogoSvgPreferred?: boolean;
+  logoVersion?: number;
+  logoImage: string;
+  logoPreview: string;
+  iconPreview: string;
+  iconVersion?: number;
+  iconImage?: string;
+  iconBackground?: string;
+  iconForeground?: string;
+  iconNoMargin?: boolean;
+  type: string;
+  categories: string[];
+  stats?: {
+    popularity?: number;
+    packageSize?: number;
+  };
+  countryStat?: Record<string, number>;
+  countryCode: string;
+  countries: string[];
+  recipientType?: string;
+  isPinBased?: boolean;
+  outOfStock?: boolean;
+  ratings?: {
+    reviewCount: number;
+    ratingValue: number;
+    ratingCount?: number;
+    scoreDistribution?: number[];
+    reviews?: Array<{
+      id: string;
+      content: string;
+      score: number;
+      scoreMax: number;
+      authorName: string;
+      createdTime: string;
+      source: string;
+      author: string;
+      extract?: string;
+      score_max?: number;
+      date?: string;
+      feedback_url?: string;
+    }>;
+  };
+  packages: Array<{
+    display?: string | null;
+    value: string;
+    eurValue: number;
+    amount: number;
+    eurPrice: number;
+    usdPrice: number;
+    prices: Record<string, number>;
+  }>;
+  currency: string;
+  terms?: string;
+  termsLink?: string;
+  languages?: Record<string, boolean>;
+  descriptions?: Record<string, string>;
+  subtitles?: Record<string, string>;
+  instructions?: Record<string, string>;
+  redemptionMethods?: string[];
+  relatedX?: Array<{
+    _id: string;
+    name: string;
+    slug: string;
+    logoImage?: string;
+    logoPreview?: string;
+    iconPreview?: string;
+    cashbackDisabled?: boolean;
+    logoVersion?: number;
+    countries?: string[];
+    type?: string;
+    countryCode?: string;
+    categories?: string[];
+    range?: {
+      min: number;
+      max: number;
+      step: number;
+      customerEurPriceRate?: number;
+      customerUsdPriceRate?: number;
+      eurValueRate?: number;
+      purchaseFeeEur?: number | null;
+      purchaseFeeUsd?: number | null;
+    };
+    currency?: string;
+    _ratingValue?: number;
+    _reviewCount?: number;
+    _priceRange?: string;
+    _expandedCC?: Record<string, number>;
+    _sortOrderCC?: Record<string, number>;
+    logoBackground?: string;
+    logoNoMargin?: boolean;
+    label?: string;
+    cashbackPercentageFinal?: number;
+    isRanged?: boolean;
+    _noIos?: boolean;
+  }>;
+  cashbackDisabled?: boolean;
+  _ratingValue?: number;
+  _reviewCount?: number;
+  _priceRange?: string;
+  _expandedCC?: Record<string, number>;
+}
