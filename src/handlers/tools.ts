@@ -1,8 +1,11 @@
-import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+} from "@modelcontextprotocol/sdk/types.js";
 import type { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { SearchOptions } from "../types/index.js";
 import { SearchService } from "../services/search.js";
 import { ProductService } from "../services/products.js";
-import { OrderService } from "../services/orders.js";
 
 /**
  * Register tool handlers with the server
@@ -18,17 +21,39 @@ export function registerToolHandlers(server: Server): void {
       tools: [
         {
           name: "search",
-          description: "Search for gift cards and mobile topups",
+          description: "Search for gift cards, esims, mobile topups and more",
           inputSchema: {
             type: "object",
             properties: {
               query: {
                 type: "string",
-                description: "Search query (e.g., 'Amazon', 'Netflix', 'AT&T')"
-              }
+                description:
+                  "Search query (e.g., 'Amazon', 'Netflix', 'AT&T' or '*' for all)",
+              },
+              country: {
+                type: "string",
+                description: "Country code (e.g., 'US', 'IT', 'GB')",
+              },
+              language: {
+                type: "string",
+                description: "Language code for results (e.g., 'en')",
+              },
+              limit: {
+                type: "number",
+                description: "Maximum number of results to return",
+              },
+              skip: {
+                type: "number",
+                description: "Number of results to skip (for pagination)",
+              },
+              category: {
+                type: "string",
+                description:
+                  "Filter by category (e.g., 'gaming', 'entertainment')",
+              },
             },
-            required: ["query"]
-          }
+            required: ["query"],
+          },
         },
         {
           name: "detail",
@@ -38,31 +63,13 @@ export function registerToolHandlers(server: Server): void {
             properties: {
               id: {
                 type: "string",
-                description: "Product ID"
-              }
-            },
-            required: ["id"]
-          }
-        },
-        {
-          name: "order",
-          description: "Create an order with cryptocurrency payment",
-          inputSchema: {
-            type: "object",
-            properties: {
-              product: {
-                type: "string",
-                description: "Product ID"
+                description: "Product ID",
               },
-              denomination: {
-                type: "number",
-                description: "Amount/denomination to purchase"
-              }
             },
-            required: ["product", "denomination"]
-          }
-        }
-      ]
+            required: ["id"],
+          },
+        },
+      ],
     };
   });
 
@@ -74,38 +81,71 @@ export function registerToolHandlers(server: Server): void {
     switch (request.params.name) {
       case "search": {
         const query = String(request.params.arguments?.query || "");
-        const searchResults = SearchService.search(query);
-        
+        // Type cast the arguments to their expected types
+        const options: Partial<SearchOptions> = {};
+
+        if (request.params.arguments?.country !== undefined)
+          options.country = String(request.params.arguments.country);
+
+        if (request.params.arguments?.language !== undefined)
+          options.language = String(request.params.arguments.language);
+
+        if (request.params.arguments?.limit !== undefined)
+          options.limit = Number(request.params.arguments.limit);
+
+        if (request.params.arguments?.skip !== undefined)
+          options.skip = Number(request.params.arguments.skip);
+
+        if (request.params.arguments?.category !== undefined)
+          options.category = String(request.params.arguments.category);
+
+        if (request.params.arguments?.beta_flags !== undefined)
+          options.beta_flags = String(request.params.arguments.beta_flags);
+
+        if (request.params.arguments?.cart !== undefined)
+          options.cart = String(request.params.arguments.cart);
+
+        if (request.params.arguments?.do_recommend !== undefined)
+          options.do_recommend = Number(request.params.arguments.do_recommend);
+
+        if (request.params.arguments?.rec !== undefined)
+          options.rec = Number(request.params.arguments.rec);
+
+        if (request.params.arguments?.sec !== undefined)
+          options.sec = Number(request.params.arguments.sec);
+
+        if (request.params.arguments?.col !== undefined)
+          options.col = Number(request.params.arguments.col);
+
+        if (request.params.arguments?.prefcc !== undefined)
+          options.prefcc = Number(request.params.arguments.prefcc);
+
+        if (request.params.arguments?.src !== undefined)
+          options.src = String(request.params.arguments.src);
+
+        const searchResults = await SearchService.search(query, options);
+
         return {
-          content: [{
-            type: "text",
-            text: JSON.stringify(searchResults, null, 2)
-          }]
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(searchResults, null, 2),
+            },
+          ],
         };
       }
 
       case "detail": {
         const id = String(request.params.arguments?.id || "");
         const productDetail = ProductService.getProductDetails(id);
-        
-        return {
-          content: [{
-            type: "text",
-            text: JSON.stringify(productDetail, null, 2)
-          }]
-        };
-      }
 
-      case "order": {
-        const product = String(request.params.arguments?.product || "");
-        const denomination = Number(request.params.arguments?.denomination || 0);
-        const orderResponse = OrderService.createOrder(product, denomination);
-        
         return {
-          content: [{
-            type: "text",
-            text: JSON.stringify(orderResponse, null, 2)
-          }]
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(productDetail, null, 2),
+            },
+          ],
         };
       }
 

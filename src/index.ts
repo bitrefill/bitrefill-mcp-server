@@ -14,7 +14,6 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { registerResourceHandlers } from "./handlers/resources.js";
 import { registerToolHandlers } from "./handlers/tools.js";
-import { registerPromptHandlers } from "./handlers/prompts.js";
 import { logError } from "./utils/index.js";
 
 /**
@@ -40,7 +39,6 @@ const server = new Server(
 function registerHandlers(): void {
   registerResourceHandlers(server);
   registerToolHandlers(server);
-  registerPromptHandlers(server);
 }
 
 /**
