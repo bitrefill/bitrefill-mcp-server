@@ -18,37 +18,3 @@ export function logError(error: Error | string, context?: string): void {
     console.error(stackTrace);
   }
 }
-
-/**
- * Safe JSON parsing with error handling
- * @param json - JSON string to parse
- * @param defaultValue - Default value to return if parsing fails
- * @returns Parsed object or default value
- */
-export function safeJsonParse<T>(json: string, defaultValue: T): T {
-  try {
-    return JSON.parse(json) as T;
-  } catch (error) {
-    logError(error as Error, 'JSON Parse');
-    return defaultValue;
-  }
-}
-
-/**
- * Safely access a potentially undefined property with a default value
- * @param obj - Object to access property from
- * @param key - Property key
- * @param defaultValue - Default value if property is undefined
- * @returns Property value or default value
- */
-export function getValueWithDefault<T, K extends keyof T>(
-  obj: T | undefined | null,
-  key: K,
-  defaultValue: T[K]
-): T[K] {
-  if (!obj) {
-    return defaultValue;
-  }
-  
-  return obj[key] !== undefined ? obj[key] : defaultValue;
-}

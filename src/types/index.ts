@@ -3,23 +3,6 @@
  */
 
 /**
- * Product category type
- */
-export type ProductCategory = string;
-
-/**
- * Product interface
- */
-export interface Product {
-  id: string;
-  name: string;
-  description: string;
-  denominations: number[];
-  country: string;
-  category: ProductCategory;
-}
-
-/**
  * Search options interface
  */
 export interface SearchOptions {
@@ -109,18 +92,6 @@ export interface BitrefillSearchResponse {
   totalCount?: number;
   categories?: ProductCategoriesMap;
   [key: string]: any;
-}
-
-/**
- * Order interface
- */
-export interface Order {
-  order_id: string;
-  product: string;
-  amount_usd: number;
-  payment_address: string;
-  amount_btc: string;
-  expires_in: string;
 }
 
 /**

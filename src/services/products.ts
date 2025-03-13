@@ -1,4 +1,4 @@
-import { Product, ProductDetailResponse } from "../types/index.js";
+import { ProductDetailResponse } from "../types/index.js";
 import { logError } from "../utils/index.js";
 
 /**
