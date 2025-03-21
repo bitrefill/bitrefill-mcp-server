@@ -6,29 +6,27 @@
  * This MCP server provides tools for interacting with Bitrefill services:
  * - Search for gift cards and mobile topups
  * - Get detailed product information
- * - Create orders with cryptocurrency payments
- * - List products by country
+ * - Browse product categories
  */
 
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { registerResourceHandlers } from "./handlers/resources.js";
 import { registerToolHandlers } from "./handlers/tools.js";
 import { logError } from "./utils/index.js";
 
 /**
- * Create an MCP server with capabilities for resources, tools, and prompts.
+ * Create an MCP server with capabilities for resources and tools.
  */
-const server = new Server(
+const server = new McpServer(
   {
-    name: "bitrefill-mcp",
-    version: "0.1.0",
+    name: "bitrefill-mcp-server",
+    version: "0.2.1",
   },
   {
     capabilities: {
       resources: {},
       tools: {},
-      prompts: {},
     },
   }
 );
@@ -46,36 +44,26 @@ function registerHandlers(): void {
  * This allows the server to communicate via standard input/output streams.
  */
 async function main(): Promise<void> {
-  try {
-    // Register all handlers
-    registerHandlers();
+  // Register all handlers
+  registerHandlers();
 
-    // Connect using stdio transport
-    const transport = new StdioServerTransport();
-    await server.connect(transport);
-    
-    // Set up error handling
-    server.onerror = (error) => {
-      logError(error, "Server");
-    };
-    
-    // Handle process termination
-    process.on("SIGINT", async () => {
-      try {
-        await server.close();
-      } catch (error) {
-        logError(error as Error, "Shutdown");
-      } finally {
-        process.exit(0);
-      }
-    });
-  } catch (error) {
-    logError(error as Error, "Startup");
-    process.exit(1);
-  }
+  // Connect using stdio transport
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+  
+  // Handle process termination
+  process.on("SIGINT", async () => {
+    try {
+      await server.close();
+    } catch (error) {
+      logError(error as Error, "Shutdown");
+    } finally {
+      process.exit(0);
+    }
+  });
 }
 
 main().catch((error) => {
-  logError(error, "Uncaught Exception");
+  logError(error as Error, "Startup");
   process.exit(1);
 });

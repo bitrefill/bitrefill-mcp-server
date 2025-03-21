@@ -1,4 +1,4 @@
-import { ProductCategoriesMap } from "../types/index.js";
+import { ProductCategoriesMap } from "../schemas/search.js";
 
 /**
  * Product types and their categories available on Bitrefill
