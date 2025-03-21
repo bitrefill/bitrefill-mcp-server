@@ -1,5 +1,10 @@
-import { BitrefillSearchResponse, SearchOptions, SearchResults } from "../types/index.js";
-import { logError } from "../utils/index.js";
+import {
+  BitrefillSearchResponse,
+  SearchOptionsSchema,
+  SearchOptionsType,
+  SearchResults,
+} from "../schemas/search.js";
+import { makeApiRequest } from "../utils/api.js";
 
 /**
  * Service for searching Bitrefill products
@@ -7,31 +12,28 @@ import { logError } from "../utils/index.js";
 export class SearchService {
   private static readonly BASE_URL = "https://www.bitrefill.com/api/omni";
   private static readonly WEBSITE_BASE_URL = "https://www.bitrefill.com";
-  
+
   /**
    * Search for products by query with optional parameters
    * @param query - Search query string
    * @param options - Additional search options
    * @returns Search results
    */
-  public static async search(query: string, options: Partial<SearchOptions> = {}): Promise<SearchResults> {
-    try {
-      const url = this.buildSearchUrl(query, options);
-      const response = await fetch(url, {
-        method: "GET",
-        headers: this.getDefaultHeaders(),
-      });
-
-      if (!response.ok) {
-        throw new Error(`API request failed with status ${response.status}`);
-      }
-
-      const data = await response.json() as BitrefillSearchResponse;
-      return this.transformApiResponse(data, options);
-    } catch (error) {
-      logError(error instanceof Error ? error : new Error(String(error)), "SearchService");
-      return { results: [] };
-    }
+  public static async search(
+    query: string,
+    options: Partial<SearchOptionsType> = {}
+  ): Promise<SearchResults> {
+    // Validate options
+    const validatedOptions = SearchOptionsSchema.parse(options);
+    const url = this.buildSearchUrl(query, validatedOptions);
+    
+    const data = await makeApiRequest<BitrefillSearchResponse>(
+      url, 
+      { method: "GET" }, 
+      "SearchService"
+    );
+    
+    return this.transformApiResponse(data, options);
   }
 
   /**
@@ -40,37 +42,26 @@ export class SearchService {
    * @param options - Additional search options
    * @returns Formatted URL string
    */
-  private static buildSearchUrl(query: string, options: Partial<SearchOptions>): string {
+  private static buildSearchUrl(
+    query: string,
+    options: Partial<SearchOptionsType>
+  ): string {
     // Start with default parameters
     const params = new URLSearchParams({
       q: query,
       limit: String(options.limit || 6),
       skip: String(options.skip || 0),
-      src: 'mcp',
-      col: '1',
-      prefcc: '1',
+      src: "mcp",
+      col: "1",
+      prefcc: "1",
     });
 
     // Add optional parameters if provided
-    if (options.category) params.set('category', options.category);
-    if (options.country) params.set('country', options.country);
-    if (options.language) params.set('hl', options.language);
+    if (options.category) params.set("category", options.category);
+    if (options.country) params.set("country", options.country);
+    if (options.language) params.set("hl", options.language);
 
     return `${this.BASE_URL}?${params.toString()}`;
-  }
-
-  /**
-   * Get default headers for API requests
-   * @returns Headers object
-   */
-  private static getDefaultHeaders(): HeadersInit {
-    return {
-      "accept": "application/json",
-      "accept-language": "en-US,en;q=0.9",
-      "sec-fetch-dest": "empty",
-      "sec-fetch-mode": "cors",
-      "sec-fetch-site": "same-origin"
-    };
   }
 
   /**
@@ -80,11 +71,17 @@ export class SearchService {
    * @param options - Search options
    * @returns Product URL
    */
-  private static generateProductUrl(product: any, options: Partial<SearchOptions> = {}): string {
+  private static generateProductUrl(
+    product: any,
+    options: Partial<SearchOptionsType> = {}
+  ): string {
     // Default values
-    const country = product.countryCode?.toLowerCase() || options.country?.toLowerCase() || 'us';
-    const language = options.language?.toLowerCase() || 'en';
-    const type = product.type?.toLowerCase() || 'gift-cards';
+    const country =
+      product.countryCode?.toLowerCase() ||
+      options.country?.toLowerCase() ||
+      "us";
+    const language = options.language?.toLowerCase() || "en";
+    const type = product.type?.toLowerCase() || "gift-cards";
     const slug = product.slug || product.id;
 
     return `${this.WEBSITE_BASE_URL}/${country}/${language}/${type}/${slug}/`;
@@ -96,7 +93,10 @@ export class SearchService {
    * @param options - Search options used for the request
    * @returns Formatted search results
    */
-  private static transformApiResponse(apiResponse: BitrefillSearchResponse, options: Partial<SearchOptions> = {}): SearchResults {
+  private static transformApiResponse(
+    apiResponse: BitrefillSearchResponse,
+    options: Partial<SearchOptionsType> = {}
+  ): SearchResults {
     if (!apiResponse.products || !Array.isArray(apiResponse.products)) {
       return { results: [] };
     }

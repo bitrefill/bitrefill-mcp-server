@@ -2,188 +2,103 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import type { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { SearchOptions } from "../types/index.js";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { SearchOptions } from "../schemas/search.js";
 import { SearchService } from "../services/search.js";
 import { ProductService } from "../services/products.js";
 import { productCategories } from "../constants/categories.js";
+import { z } from "zod";
 
 /**
  * Register tool handlers with the server
  * @param server - MCP server instance
  */
-export function registerToolHandlers(server: Server): void {
+export function registerToolHandlers(server: McpServer): void {
   /**
-   * Handler that lists available tools.
-   * Exposes three tools: search, detail, and order.
+   * Search tool
+   * Allows searching for gift cards, esims, mobile topups and more.
+   * @param args - Search arguments
+   * @returns Search results
    */
-  server.setRequestHandler(ListToolsRequestSchema, async () => {
-    return {
-      tools: [
-        {
-          name: "search",
-          description: "Search for gift cards, esims, mobile topups and more. It's suggested to use the `categories` tool before searching for products, to have a better understanding of what's available.",
-          inputSchema: {
-            type: "object",
-            properties: {
-              query: {
-                type: "string",
-                description:
-                  "Search query (e.g., 'Amazon', 'Netflix', 'AT&T' or '*' for all)",
-              },
-              country: {
-                type: "string",
-                description: "Country code (e.g., 'US', 'IT', 'GB')",
-              },
-              language: {
-                type: "string",
-                description: "Language code for results (e.g., 'en')",
-              },
-              limit: {
-                type: "number",
-                description: "Maximum number of results to return",
-              },
-              skip: {
-                type: "number",
-                description: "Number of results to skip (for pagination)",
-              },
-              category: {
-                type: "string",
-                description:
-                  "Filter by category (e.g., 'gaming', 'entertainment')",
-              },
-            },
-            required: ["query"],
-          },
-        },
-        {
-          name: "detail",
-          description: "Get detailed information about a product",
-          inputSchema: {
-            type: "object",
-            properties: {
-              id: {
-                type: "string",
-                description: "Product ID",
-              },
-            },
-            required: ["id"],
-          },
-        },
-        {
-          name: "categories",
-          description: "Get the full product type/categories map. It's suggested to use this tool to get the categories and then use the `search` tool to search for products in a specific category.",
-          inputSchema: {
-            type: "object",
-            properties: {},
-            required: [],
-          },
-        },
-      ],
-    };
-  });
-
-  /**
-   * Handler for the Bitrefill tools.
-   * Redirects to appropriate service based on the tool name.
-   */
-  server.setRequestHandler(CallToolRequestSchema, async (request) => {
-    switch (request.params.name) {
-      case "search": {
-        const query = String(request.params.arguments?.query || "");
-        // Type cast the arguments to their expected types
-        const options: Partial<SearchOptions> = {};
-
-        if (request.params.arguments?.country !== undefined)
-          options.country = String(request.params.arguments.country);
-
-        if (request.params.arguments?.language !== undefined)
-          options.language = String(request.params.arguments.language);
-
-        if (request.params.arguments?.limit !== undefined)
-          options.limit = Number(request.params.arguments.limit);
-
-        if (request.params.arguments?.skip !== undefined)
-          options.skip = Number(request.params.arguments.skip);
-
-        if (request.params.arguments?.category !== undefined)
-          options.category = String(request.params.arguments.category);
-
-        if (request.params.arguments?.beta_flags !== undefined)
-          options.beta_flags = String(request.params.arguments.beta_flags);
-
-        if (request.params.arguments?.cart !== undefined)
-          options.cart = String(request.params.arguments.cart);
-
-        if (request.params.arguments?.do_recommend !== undefined)
-          options.do_recommend = Number(request.params.arguments.do_recommend);
-
-        if (request.params.arguments?.rec !== undefined)
-          options.rec = Number(request.params.arguments.rec);
-
-        if (request.params.arguments?.sec !== undefined)
-          options.sec = Number(request.params.arguments.sec);
-
-        if (request.params.arguments?.col !== undefined)
-          options.col = Number(request.params.arguments.col);
-
-        if (request.params.arguments?.prefcc !== undefined)
-          options.prefcc = Number(request.params.arguments.prefcc);
-
-        if (request.params.arguments?.src !== undefined)
-          options.src = String(request.params.arguments.src);
-
-        const searchResults = await SearchService.search(query, options);
-
+  server.tool(
+    "search",
+    "Search for gift cards, esims, mobile topups and more. It's suggested to use the `categories` tool before searching for products, to have a better understanding of what's available.",
+    SearchOptions,
+    async (args) => {
+      try {
+        const searchResults = await SearchService.search(args.query, args);
+        return {
+          content: [
+            { type: "text", text: JSON.stringify(searchResults, null, 2) },
+          ],
+        };
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
         return {
           content: [
             {
               type: "text",
-              text: JSON.stringify(searchResults, null, 2),
+              text: JSON.stringify({ error: errorMessage }, null, 2),
             },
           ],
+          isError: true,
         };
       }
-
-      case "detail": {
-        const id = String(request.params.arguments?.id || "");
-        try {
-          const productDetail = await ProductService.getProductDetails(id);
-
-          return {
-            content: [
-              {
-                type: "text",
-                text: JSON.stringify(productDetail, null, 2),
-              },
-            ],
-          };
-        } catch (error) {
-          return {
-            content: [
-              {
-                type: "text",
-                text: `Error fetching product details: ${error instanceof Error ? error.message : String(error)}`,
-              },
-            ],
-            isError: true,
-          };
-        }
-      }
-
-      case "categories": {
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(productCategories, null, 2),
-            },
-          ],
-        };
-      }
-
-      default:
-        throw new Error("Unknown tool");
     }
-  });
+  );
+
+  /**
+   * Detail tool
+   * Retrieves detailed information about a specific product.
+   * @param args - Product identifier
+   * @returns Detailed product information
+   */
+  server.tool(
+    "detail",
+    "Get detailed information about a product",
+    {
+      id: z.string().describe("Unique identifier of the product"),
+    },
+    async (args) => {
+      try {
+        const productDetail = await ProductService.getProductDetails(args.id);
+        return {
+          content: [
+            { type: "text", text: JSON.stringify(productDetail, null, 2) },
+          ],
+        };
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({ error: errorMessage }, null, 2),
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
+  );
+
+  /**
+   * Categories tool
+   * Provides a map of product types and their associated categories.
+   * @returns Complete product categories hierarchy
+   */
+  server.tool(
+    "categories",
+    "Get the full product type/categories map. It's suggested to use this tool to get the categories and then use the `search` tool to search for products in a specific category.",
+    {},
+    async () => {
+      return {
+        content: [
+          { type: "text", text: JSON.stringify(productCategories, null, 2) },
+        ],
+      };
+    }
+  );
 }
