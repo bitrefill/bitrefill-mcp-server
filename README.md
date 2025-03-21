@@ -24,11 +24,12 @@ src/
 ├── handlers/               # MCP request handlers
 │   ├── resources.ts        # Resource endpoints
 │   └── tools.ts            # Tool implementations
+├── schemas/                # Data validation schemas
+│   ├── detail.ts           # Product detail response types
+│   └── search.ts           # Search parameters and response types
 ├── services/               # API services
 │   ├── products.ts         # Product details service
 │   └── search.ts           # Search functionality
-├── types/                  # TypeScript definitions
-│   └── index.ts            # Types for API responses
 └── utils/                  # Utility functions
     └── index.ts            # Error logging, etc.
 ```
