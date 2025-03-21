@@ -21,7 +21,7 @@ import { logError } from "./utils/index.js";
 const server = new McpServer(
   {
     name: "bitrefill-mcp-server",
-    version: "0.3.0",
+    version: "0.2.1",
   },
   {
     capabilities: {

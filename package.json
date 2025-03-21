@@ -1,6 +1,6 @@
 {
   "name": "bitrefill-mcp-server",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Shop for gift cards, mobile refills, and digital services on Bitrefill using cryptocurrency",
   "keywords": [
     "bitrefill",
