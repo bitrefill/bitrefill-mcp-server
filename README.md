@@ -51,6 +51,28 @@ src/
 - `categories` - Get the full product type/categories map
   - No required parameters
 
+- `create_invoice` - Create a new invoice for purchasing products (requires API key)
+  - Required: `products` (array of products to include in the invoice)
+    - Each product requires: `product_id`
+    - Optional product fields: `quantity`, `value`, `package_id`, `phone_number`, `email`, `send_email`, `send_sms`
+  - Required: `payment_method` (one of: "balance", "bitcoin", "lightning")
+  - Optional: `webhook_url`, `auto_pay`
+
+## Configuration
+
+### API Key Setup
+
+To use the `create_invoice` tool, you need to set up Bitrefill API credentials:
+
+1. Create a `.env` file in the root directory (you can copy from `.env.example`)
+2. Add your Bitrefill API credentials:
+   ```
+   BITREFILL_API_SECRET=your_api_key_here
+   BITREFILL_API_ID=your_api_id_here
+   ```
+
+The `create_invoice` tool will only be available if the API credentials are set. If the API credentials are not set, the tool will not be registered and won't appear in the list of available tools.
+
 ## Development
 
 Install dependencies:
@@ -99,7 +121,11 @@ Add the server config at:
   "mcpServers": {
     "bitrefill": {
       "command": "npx",
-      "args": ["-y", "bitrefill-mcp-server"]
+      "args": ["-y", "bitrefill-mcp-server"],
+      "env": {
+        "BITREFILL_API_SECRET": "your_api_key_here",
+        "BITREFILL_API_ID": "your_api_id_here"
+      }
     }
   }
 }
@@ -119,7 +145,11 @@ Add the server config at:
       "command": "npx",
       "args": ["-y", "bitrefill-mcp-server"],
       "disabled": false,
-      "autoApprove": ["search", "detail", "categories"]
+      "autoApprove": ["search", "detail", "categories"],
+      "env": {
+        "BITREFILL_API_SECRET": "your_api_key_here",
+        "BITREFILL_API_ID": "your_api_id_here"
+      }
     }
   }
 }
@@ -141,6 +171,10 @@ Additional Cline configuration options:
 npx -y bitrefill-mcp-server
 ```
 
+6. (Optional) If you're using the `create_invoice` tool, add environment variables:
+   - BITREFILL_API_SECRET: your_api_key_here
+   - BITREFILL_API_ID: your_api_id_here
+
 ### Docker
 
 You can also run the server using Docker. First, build the image:
@@ -152,7 +186,7 @@ docker build -t bitrefill-mcp-server .
 Then run the container:
 
 ```bash
-docker run -e bitrefill-mcp-server
+docker run -e BITREFILL_API_SECRET=your_api_key_here -e BITREFILL_API_ID=your_api_id_here bitrefill-mcp-server
 ```
 
 For development, you might want to mount your source code as a volume:
@@ -160,4 +194,3 @@ For development, you might want to mount your source code as a volume:
 ```bash
 docker run -v $(pwd):/app --env-file .env bitrefill-mcp-server
 ```
-

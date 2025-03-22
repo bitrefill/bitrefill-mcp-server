@@ -28,6 +28,9 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.7.0",
     "dotenv": "^16.4.7",
+    "dotenv-cli": "^8.0.0",
+    "install": "^0.13.0",
+    "npm": "^11.2.0",
     "zod": "^3.24.2"
   },
   "devDependencies": {

@@ -6,7 +6,12 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { SearchOptions } from "../schemas/search.js";
 import { SearchService } from "../services/search.js";
 import { ProductService } from "../services/products.js";
+import { InvoiceService } from "../services/invoices.js";
 import { productCategories } from "../constants/categories.js";
+import {
+  CreateInvoiceRequest,
+  CreateInvoiceRequestSchema,
+} from "../schemas/invoice.js";
 import { z } from "zod";
 
 /**
@@ -101,4 +106,40 @@ export function registerToolHandlers(server: McpServer): void {
       };
     }
   );
+
+  // Conditionally register the create_invoice tool only if the API key is available
+  if (InvoiceService.isAvailable()) {
+    /**
+     * Create Invoice tool
+     * Creates a new invoice for products
+     * @param args - Invoice creation arguments
+     * @returns Invoice details
+     */
+    server.tool(
+      "create_invoice",
+      "Create a new invoice for purchasing products with various payment methods",
+      CreateInvoiceRequest,
+      async (args) => {
+        try {
+          const validatedArgs = CreateInvoiceRequestSchema.parse(args);
+          const invoice = await InvoiceService.createInvoice(validatedArgs);
+          return {
+            content: [{ type: "text", text: JSON.stringify(invoice, null, 2) }],
+          };
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({ error: errorMessage }, null, 2),
+              },
+            ],
+            isError: true,
+          };
+        }
+      }
+    );
+  }
 }
