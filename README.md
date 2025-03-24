@@ -100,6 +100,36 @@ npm run inspector
 
 The Inspector will provide a URL to access debugging tools in your browser.
 
+## Testing Services
+
+A test utility is included to test the Bitrefill services without running the full MCP server. This is useful for development and debugging purposes.
+
+```bash
+npm run test-services help
+```
+
+The utility supports the following commands:
+
+- `search`: Search for products
+  ```bash
+  npm run test-services search "Amazon" --country=US --limit=5
+  ```
+
+- `detail`: Get product details
+  ```bash
+  npm run test-services detail amazon_com-usa
+  ```
+
+- `categories`: List product categories
+  ```bash
+  npm run test-services categories
+  ```
+
+- `invoice`: Create an invoice (requires API credentials)
+  ```bash
+  npm run test-services invoice --product=amazon_com-usa --value=25 --payment=bitcoin
+  ```
+
 ## Installation
 
 ### Installing via Smithery

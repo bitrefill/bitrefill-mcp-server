@@ -33,7 +33,8 @@ export async function makeApiRequest<T>(
     const response = await fetch(url, options);
 
     if (!response.ok) {
-      throw new Error(`API request failed with status ${response.status}`);
+      const errorText = await response.text();
+      throw new Error(`API request failed with status ${response.status}: ${errorText}`);
     }
 
     return (await response.json()) as T;

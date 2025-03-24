@@ -13,7 +13,7 @@ export class InvoiceService {
    * @returns True if the service is available, false otherwise
    */
   public static isAvailable(): boolean {
-    return !!process.env.BITREFILL_API_SECRET && !!process.env.BITREFILL_API_ID;
+    return (!!process.env.BITREFILL_API_SECRET && !!process.env.BITREFILL_API_ID) || !!process.env.BITREFILL_API_TOKEN;
   }
 
   /**
@@ -26,27 +26,41 @@ export class InvoiceService {
     request: CreateInvoiceRequest
   ): Promise<InvoiceResponse> {
     const url = `${this.BASE_URL}/invoices`;
-    
+
     try {
-      // Get API key from environment variable
+      // Get API authentication credentials from environment variables
       const apiSecret = process.env.BITREFILL_API_SECRET;
       const apiId = process.env.BITREFILL_API_ID;
-      
-      if (!apiSecret || !apiId) {
-        throw new Error("BITREFILL_API_SECRET and BITREFILL_API_ID environment variables are not set");
+      const apiToken = process.env.BITREFILL_API_TOKEN;
+
+      if (!((apiSecret && apiId) || apiToken)) {
+        throw new Error("Either BITREFILL_API_SECRET and BITREFILL_API_ID or BITREFILL_API_TOKEN environment variables must be set");
       }
-      
+
+      // Create authentication header based on available credentials:
+      // Use Basic Auth if both secret and id are provided; otherwise, use Bearer token.
+      const authHeader = (apiSecret && apiId)
+        ? `Basic ${Buffer.from(`${apiId}:${apiSecret}`).toString("base64")}`
+        : `Basic ${apiToken}`;
+
       // Make the actual API request
-      return makeApiRequest<InvoiceResponse>(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Basic ${Buffer.from(`${apiId}:${apiSecret}`).toString('base64')}`
+      return makeApiRequest<InvoiceResponse>(
+        url,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            authorization: authHeader,
+          },
+          body: JSON.stringify(request),
         },
-        body: JSON.stringify(request)
-      }, "InvoiceService");
-    } catch (error) {
-      logError(error instanceof Error ? error : new Error(String(error)), "InvoiceService");
+        "InvoiceService"
+      );
+    } catch (error: unknown) {
+      logError(
+        error instanceof Error ? error : new Error(String(error)),
+        "InvoiceService"
+      );
       throw error;
     }
   }

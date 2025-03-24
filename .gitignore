@@ -42,3 +42,6 @@ yarn-error.log*
 # Misc
 .cache/
 .temp/
+
+# MCP
+.cursor/mcp.json

@@ -2,7 +2,7 @@ import { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { productCategories } from "../constants/categories.js";
-import { ProductService } from "../services/products.js";
+import { paymentMethods } from "../constants/payment_methods.js";
 
 // Type for product types to help TypeScript understand valid keys
 type ProductType = keyof typeof productCategories;
@@ -12,6 +12,24 @@ type ProductType = keyof typeof productCategories;
  * @param server - MCP server instance
  */
 export function registerResourceHandlers(server: McpServer): void {
+  /**
+   * Static resource for payment methods
+   * Exposes all available payment methods
+   */
+  server.resource(
+    "payment-methods",
+    "bitrefill://payment-methods",
+    async (uri) => ({
+      contents: [ 
+        {
+          uri: uri.href,
+          mimeType: "application/json",
+          text: JSON.stringify(paymentMethods, null, 2),
+        },
+      ],
+    })
+  );
+  
   /**
    * Static resource for product types
    * Exposes all available product types

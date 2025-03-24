@@ -2,7 +2,7 @@
  * Type definitions for Bitrefill Invoice API
  */
 import { z } from "zod";
-
+import { paymentMethods } from "../constants/payment_methods.js";
 /**
  * Product item schema for invoice creation
  */
@@ -48,7 +48,7 @@ export const CreateInvoiceRequest = {
     .describe("Array of products to include in the invoice"),
   payment_method: z
     .enum(["balance", "bitcoin", "lightning", "ethereum"])
-    .describe("Required payment method"),
+    .describe(`Required payment method. Available methods: ${paymentMethods.join(", ")}`),
   webhook_url: z
     .string()
     .url()
