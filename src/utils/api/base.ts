@@ -26,6 +26,26 @@ export abstract class BaseApiClient {
   protected abstract readonly context: string;
 
   /**
+   * Build a query string from an object of parameters
+   * @param params - Query parameters object
+   * @returns Query string (including ? prefix if params exist)
+   */
+  protected buildQueryString(params?: Record<string, any>): string {
+    if (!params) return '';
+    
+    const searchParams = new URLSearchParams();
+    
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        searchParams.append(key, String(value));
+      }
+    });
+    
+    const queryString = searchParams.toString();
+    return queryString ? `?${queryString}` : '';
+  }
+
+  /**
    * Make an API request with error handling
    * @param endpoint - API endpoint path (will be appended to baseUrl)
    * @param options - Fetch options

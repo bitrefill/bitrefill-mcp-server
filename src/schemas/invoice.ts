@@ -3,6 +3,119 @@
  */
 import { z } from "zod";
 import { paymentMethods } from "../constants/payment_methods.js";
+
+/**
+ * Invoice list request options schema
+ */
+export const InvoiceListOptionsSchema = z.object({
+  start: z.number().int().nonnegative().optional().describe("Start index. Default: 0"),
+  limit: z.number().int().positive().max(50).optional().describe("Maximum number of records. Maximum/Default: 50"),
+  after: z.string().optional().describe("Start date for limiting results (Inclusive). Format: YYYY-MM-DD HH:MM:SS"),
+  before: z.string().optional().describe("End date for limiting results (Non-Inclusive). Format: YYYY-MM-DD HH:MM:SS"),
+});
+
+/**
+ * Invoice list options type
+ */
+export type InvoiceListOptions = z.infer<typeof InvoiceListOptionsSchema>;
+
+/**
+ * Get invoice by ID response schema
+ */
+export const InvoiceDetailResponseSchema = z.object({
+  meta: z.object({
+    id: z.string(),
+    _endpoint: z.string(),
+  }),
+  data: z.object({
+    id: z.string().describe("Unique invoice identifier"),
+    created_time: z.string().describe("Creation timestamp"),
+    completed_time: z.string().optional().describe("Completion timestamp"),
+    status: z.string().describe("Invoice status"),
+    user: z.object({
+      id: z.string(),
+      email: z.string(),
+    }).optional(),
+    payment: z.object({
+      method: z.string().describe("Payment method"),
+      address: z.string().optional().describe("Payment address"),
+      currency: z.string().describe("Currency"),
+      price: z.number().describe("Price"),
+      status: z.string().describe("Payment status"),
+      commission: z.number().optional().describe("Commission"),
+    }),
+  }),
+});
+
+/**
+ * Invoice detail response type
+ */
+export type InvoiceDetailResponse = z.infer<typeof InvoiceDetailResponseSchema>;
+
+/**
+ * Invoice list response schema
+ */
+export const InvoiceListResponseSchema = z.object({
+  meta: z.object({
+    start: z.number(),
+    limit: z.number(),
+    after: z.string().optional(),
+    before: z.string().optional(),
+    _endpoint: z.string(),
+  }),
+  data: z.array(
+    z.object({
+      id: z.string().describe("Unique invoice identifier"),
+      created_time: z.string().describe("Creation timestamp"),
+      completed_time: z.string().optional().describe("Completion timestamp"),
+      status: z.string().describe("Invoice status"),
+      user: z.object({
+        id: z.string(),
+        email: z.string(),
+      }).optional(),
+      payment: z.object({
+        method: z.string().describe("Payment method"),
+        address: z.string().optional().describe("Payment address"),
+        currency: z.string().describe("Currency"),
+        price: z.number().describe("Price"),
+        status: z.string().describe("Payment status"),
+        commission: z.number().optional().describe("Commission"),
+      }),
+    })
+  ),
+});
+
+/**
+ * Invoice list response type
+ */
+export type InvoiceListResponse = z.infer<typeof InvoiceListResponseSchema>;
+
+/**
+ * Pay invoice response schema
+ */
+export const PayInvoiceResponseSchema = z.object({
+  meta: z.object({
+    id: z.string(),
+    _endpoint: z.string(),
+  }),
+  data: z.object({
+    id: z.string().describe("Unique invoice identifier"),
+    created_time: z.string().describe("Creation timestamp"),
+    completed_time: z.string().describe("Completion timestamp"),
+    status: z.string().describe("Invoice status after payment attempt"),
+    payment: z.object({
+      method: z.string().describe("Payment method"),
+      currency: z.string().describe("Currency"),
+      price: z.number().describe("Price"),
+      status: z.string().describe("Payment status after payment attempt"),
+    }),
+  }),
+});
+
+/**
+ * Pay invoice response type
+ */
+export type PayInvoiceResponse = z.infer<typeof PayInvoiceResponseSchema>;
 /**
  * Product item schema for invoice creation
  */
