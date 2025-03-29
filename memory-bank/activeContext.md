@@ -10,7 +10,7 @@ The immediate task is to perform a code quality review of the `src/` directory, 
 
 ## 3. Next Steps
 
-1.  **Complete Memory Bank:** Create the `progress.md` file.
+1.  **Complete Memory Bank:** Ensure all core Memory Bank files are up-to-date.
 2.  **Analyze `src/`:** Begin the code review process by examining the files within the `src/` subdirectories (`constants/`, `handlers/`, `schemas/`, `services/`, `utils/`).
 3.  **Provide Feedback:** Document findings and suggest improvements based on the analysis.
 

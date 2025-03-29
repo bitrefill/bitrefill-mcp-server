@@ -58,6 +58,30 @@ src/
   - Required: `payment_method` (one of: "balance", "bitcoin", "lightning")
   - Optional: `webhook_url`, `auto_pay`
 
+- `get_invoices` - Retrieve a list of invoices with optional filtering
+  - Optional: `start`, `limit`, `after`, `before`
+
+- `get_invoice` - Retrieve details for a specific invoice by ID
+  - Required: `id` (invoice identifier)
+
+- `pay_invoice` - Pay an unpaid invoice (only works with 'balance' payment method)
+  - Required: `id` (invoice identifier)
+
+- `get_orders` - Retrieve a list of orders with optional filtering
+  - Optional: `start`, `limit`, `after`, `before`
+
+- `get_order` - Retrieve details for a specific order by ID
+  - Required: `id` (order identifier)
+
+- `unseal_order` - Reveal codes and PINs for a specific order by ID
+  - Required: `id` (order identifier)
+
+- `get_account_balance` - Retrieve your account balance
+  - No required parameters
+
+- `ping` - Check if the Bitrefill API is available
+  - No required parameters
+
 ## Configuration
 
 ### API Key Setup
