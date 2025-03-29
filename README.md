@@ -20,18 +20,29 @@ The app server follows this architecture:
 src/
 ├── index.ts                # Main entry point
 ├── constants/              # Static data
-│   └── categories.ts       # Product categories
+│   ├── categories.ts       # Product categories
+│   └── payment_methods.ts  # Payment methods
 ├── handlers/               # MCP request handlers
 │   ├── resources.ts        # Resource endpoints
 │   └── tools.ts            # Tool implementations
 ├── schemas/                # Data validation schemas
 │   ├── detail.ts           # Product detail response types
+│   ├── invoice.ts          # Invoice schemas
+│   ├── misc.ts             # Miscellaneous schemas
+│   ├── order.ts            # Order schemas
 │   └── search.ts           # Search parameters and response types
 ├── services/               # API services
+│   ├── invoices.ts         # Invoice service
+│   ├── misc.ts             # Miscellaneous services
+│   ├── orders.ts           # Order services
 │   ├── products.ts         # Product details service
 │   └── search.ts           # Search functionality
 └── utils/                  # Utility functions
-    └── index.ts            # Error logging, etc.
+    ├── index.ts            # Error logging, etc.
+    └── api/                # API clients
+        ├── authenticated.ts # Authenticated API client
+        ├── base.ts         # Base API client
+        └── public.ts       # Public API client
 ```
 
 ## Features
@@ -125,36 +136,6 @@ npm run inspector
 ```
 
 The Inspector will provide a URL to access debugging tools in your browser.
-
-## Testing Services
-
-A test utility is included to test the Bitrefill services without running the full MCP server. This is useful for development and debugging purposes.
-
-```bash
-npm run test-services help
-```
-
-The utility supports the following commands:
-
-- `search`: Search for products
-  ```bash
-  npm run test-services search "Amazon" --country=US --limit=5
-  ```
-
-- `detail`: Get product details
-  ```bash
-  npm run test-services detail amazon_com-usa
-  ```
-
-- `categories`: List product categories
-  ```bash
-  npm run test-services categories
-  ```
-
-- `invoice`: Create an invoice (requires API credentials)
-  ```bash
-  npm run test-services invoice --product=amazon_com-usa --value=25 --payment=bitcoin
-  ```
 
 ## Installation
 
