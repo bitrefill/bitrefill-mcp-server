@@ -7,7 +7,7 @@ import { z } from "zod";
  * Search options schema
  */
 export const SearchOptions = {
-  query: z.string().describe("Search query (e.g., 'Amazon', 'Netflix', 'AT&T' or '*' for all)"),
+  query: z.string().describe("Search query (e.g., 'Amazon', 'Netflix', 'AT&T' or '*' for all the available products)"),
   country: z.string().optional().describe("Country code (e.g., 'US', 'IT', 'GB')"),
   language: z.string().optional().describe("Language code for results (e.g., 'en')"),
   limit: z.number().optional().describe("Maximum number of results to return"),

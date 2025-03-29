@@ -6,7 +6,6 @@
         "./build/index.js"
       ],
       "env": {
-        "BITREFILL_API_TOKEN": "your-api-token-here",
         "BITREFILL_API_SECRET": "your-api-secret-here",
         "BITREFILL_API_ID": "your-api-id-here"
       }

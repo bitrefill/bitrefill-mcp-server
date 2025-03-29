@@ -14,7 +14,7 @@ export const InvoiceProductSchema = z.object({
     .positive()
     .optional()
     .describe("Optional: Default is 1"),
-  value: z.number().optional().describe("Required for variable-value products"),
+  value: z.number().optional().describe("Required for variable-value products. Use the exact value present in packages.amount for the package to buy"),
   package_id: z
     .string()
     .optional()

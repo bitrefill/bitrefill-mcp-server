@@ -1,7 +1,3 @@
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-} from "@modelcontextprotocol/sdk/types.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { SearchOptions } from "../schemas/search.js";
 import { SearchService } from "../services/search.js";
@@ -34,16 +30,15 @@ export function registerToolHandlers(server: McpServer): void {
         const searchResults = await SearchService.search(args.query, args);
         return {
           content: [
-            { type: "text", text: JSON.stringify(searchResults, null, 2) },
-          ],
+            { type: "text" as const, text: JSON.stringify(searchResults, null, 2) }
+          ]
         };
       } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : String(error);
+        const errorMessage = error instanceof Error ? error.message : String(error);
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: JSON.stringify({ error: errorMessage }, null, 2),
             },
           ],
@@ -70,16 +65,15 @@ export function registerToolHandlers(server: McpServer): void {
         const productDetail = await ProductService.getProductDetails(args.id);
         return {
           content: [
-            { type: "text", text: JSON.stringify(productDetail, null, 2) },
-          ],
+            { type: "text" as const, text: JSON.stringify(productDetail, null, 2) }
+          ]
         };
       } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : String(error);
+        const errorMessage = error instanceof Error ? error.message : String(error);
         return {
           content: [
             {
-              type: "text",
+              type: "text" as const,
               text: JSON.stringify({ error: errorMessage }, null, 2),
             },
           ],
@@ -101,8 +95,8 @@ export function registerToolHandlers(server: McpServer): void {
     async () => {
       return {
         content: [
-          { type: "text", text: JSON.stringify(productCategories, null, 2) },
-        ],
+          { type: "text" as const, text: JSON.stringify(productCategories, null, 2) }
+        ]
       };
     }
   );
@@ -124,15 +118,16 @@ export function registerToolHandlers(server: McpServer): void {
           const validatedArgs = CreateInvoiceRequestSchema.parse(args);
           const invoice = await InvoiceService.createInvoice(validatedArgs);
           return {
-            content: [{ type: "text", text: JSON.stringify(invoice, null, 2) }],
+            content: [
+              { type: "text" as const, text: JSON.stringify(invoice, null, 2) }
+            ]
           };
         } catch (error) {
-          const errorMessage =
-            error instanceof Error ? error.message : String(error);
+          const errorMessage = error instanceof Error ? error.message : String(error);
           return {
             content: [
               {
-                type: "text",
+                type: "text" as const,
                 text: JSON.stringify({ error: errorMessage }, null, 2),
               },
             ],
