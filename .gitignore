@@ -19,7 +19,6 @@ coverage/
 
 # Environment variables
 .env
-.env.*
 .env.local
 .env.development.local
 .env.test.local
@@ -43,3 +42,6 @@ yarn-error.log*
 # Misc
 .cache/
 .temp/
+
+# MCP
+.cursor/mcp.json

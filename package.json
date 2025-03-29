@@ -1,6 +1,6 @@
 {
   "name": "bitrefill-mcp-server",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Shop for gift cards, mobile refills, and digital services on Bitrefill using cryptocurrency",
   "keywords": [
     "bitrefill",
@@ -23,10 +23,15 @@
     "build": "tsc && node -e \"require('fs').chmodSync('build/index.js', '755')\"",
     "prepare": "npm run build",
     "watch": "tsc --watch",
-    "inspector": "npx @modelcontextprotocol/inspector build/index.js"
+    "inspector": "npx @modelcontextprotocol/inspector build/index.js",
+    "test-services": "node test-services.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.7.0",
+    "dotenv": "^16.4.7",
+    "dotenv-cli": "^8.0.0",
+    "install": "^0.13.0",
+    "npm": "^11.2.0",
     "zod": "^3.24.2"
   },
   "devDependencies": {

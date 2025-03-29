@@ -1,12 +1,11 @@
 import { ProductDetailResponse } from "../schemas/detail.js";
-import { makeApiRequest } from "../utils/api.js";
+import { publicApiClient } from "../utils/api/public.js";
 
 /**
  * Service for product operations
+ * Uses the PublicApiClient for API requests
  */
 export class ProductService {
-  private static readonly BASE_URL = "https://www.bitrefill.com/api/product";
-
   /**
    * Get product details by ID
    * @param id - Product ID
@@ -16,9 +15,6 @@ export class ProductService {
   public static async getProductDetails(
     id: string
   ): Promise<ProductDetailResponse> {
-    const url = `${this.BASE_URL}/${id}`;
-    return makeApiRequest<ProductDetailResponse>(url, {
-      method: "GET",
-    }, "ProductService");
+    return publicApiClient.getProductDetails(id);
   }
 }
