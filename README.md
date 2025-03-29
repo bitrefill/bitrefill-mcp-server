@@ -86,10 +86,12 @@ src/
 
 ### API Key Setup
 
-To use the `create_invoice` tool, you need to set up Bitrefill API credentials:
+To use the all the tools that rely on the Bitrefill API except for `search`, `categories` and `detail`, you need to set up Bitrefill API credentials:
 
-1. Create a `.env` file in the root directory (you can copy from `.env.example`)
-2. Add your Bitrefill API credentials:
+1. Create a Bitrefill account
+2. Ask for a developer API key by filing a request on [this form](https://bitrefill.typeform.com/to/BDmIVEsH?typeform-source=www.github.com)
+3. Create a `.env` file in the root directory (you can copy from `.env.example`)
+4. Add your Bitrefill API credentials:
    ```
    BITREFILL_API_SECRET=your_api_key_here
    BITREFILL_API_ID=your_api_id_here
