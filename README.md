@@ -184,8 +184,8 @@ Add the server config at:
       "disabled": false,
       "autoApprove": ["search", "detail", "categories"],
       "env": {
-        "BITREFILL_API_SECRET": "your_api_key_here",
-        "BITREFILL_API_ID": "your_api_id_here"
+        "BITREFILL_API_ID": "your_api_id_here",
+        "BITREFILL_API_SECRET": "your_api_key_here"
       }
     }
   }
