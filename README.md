@@ -3,6 +3,10 @@
 
 A TypeScript-based MCP server that provides access to Bitrefill services, allowing you to search for gift cards, mobile topups, and more. This server implements the Model Context Protocol to expose Bitrefill functionality to AI assistants.
 
+<a href="https://glama.ai/mcp/servers/@bitrefill/bitrefill-mcp-server">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@bitrefill/bitrefill-mcp-server/badge" alt="Bitrefill Search and Shop MCP server" />
+</a>
+
 ## How It Works
 
 The server operates using the Model Context Protocol (MCP) to communicate with Claude and similar AI assistants. It:
