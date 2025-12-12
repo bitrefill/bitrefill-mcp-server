@@ -1,5 +1,4 @@
 # Bitrefill MCP Server
-[![smithery badge](https://smithery.ai/badge/@bitrefill/bitrefill-mcp-server)](https://smithery.ai/server/@bitrefill/bitrefill-mcp-server)
 
 A TypeScript-based MCP server that provides access to Bitrefill services, allowing you to search for gift cards, mobile topups, and more. This server implements the Model Context Protocol to expose Bitrefill functionality to AI assistants.
 
