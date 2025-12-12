@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/bitrefill-bitrefill-mcp-server-badge.jpg)](https://mseep.ai/app/bitrefill-bitrefill-mcp-server)
+
 # Bitrefill MCP Server
 
 A TypeScript-based MCP server that provides access to Bitrefill services, allowing you to search for gift cards, mobile topups, and more. This server implements the Model Context Protocol to expose Bitrefill functionality to AI assistants.
