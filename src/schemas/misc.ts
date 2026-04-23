@@ -1,7 +1,7 @@
 /**
  * Type definitions for miscellaneous Bitrefill API endpoints
  */
-import { z } from 'zod';
+import * as z from 'zod/v4';
 
 /**
  * Ping response schema

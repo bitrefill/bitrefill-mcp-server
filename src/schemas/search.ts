@@ -1,7 +1,7 @@
 /**
  * Type definitions for Bitrefill MCP server
  */
-import { z } from 'zod';
+import * as z from 'zod/v4';
 
 /**
  * Search options schema
@@ -50,7 +50,7 @@ export const SearchResultItemSchema = z.object({
     countryCode: z.string().optional(),
     currency: z.string().optional(),
     isRanged: z.boolean().optional(),
-    range: z.record(z.any()).optional(),
+    range: z.record(z.string(), z.any()).optional(),
     redemptionMethods: z.array(z.string()).optional(),
     slug: z.string().optional(),
     usageMethods: z.array(z.string()).optional(),
@@ -77,12 +77,19 @@ export type SearchResults = z.infer<typeof SearchResultsSchema>;
 /**
  * Product categories map schema
  */
-export const ProductCategoriesMapSchema = z.record(z.array(z.string()));
+export const ProductCategoriesMapSchema = z.record(z.string(), z.array(z.string()));
 
 /**
  * Product types and their associated categories
  */
 export type ProductCategoriesMap = z.infer<typeof ProductCategoriesMapSchema>;
+
+/**
+ * Output for the `categories` MCP tool (product type → category names)
+ */
+export const CategoriesToolOutputSchema = z.object({
+    categories: ProductCategoriesMapSchema,
+});
 
 /**
  * API response schema for Bitrefill search

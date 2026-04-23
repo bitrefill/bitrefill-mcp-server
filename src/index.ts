@@ -22,18 +22,10 @@ dotenv.config();
 /**
  * Create an MCP server with capabilities for resources and tools.
  */
-const server = new McpServer(
-    {
-        name: 'bitrefill-mcp-server',
-        version: '0.3.0',
-    },
-    {
-        capabilities: {
-            resources: {},
-            tools: {},
-        },
-    }
-);
+const server = new McpServer({
+    name: 'bitrefill-mcp-server',
+    version: '0.3.0',
+});
 
 /**
  * Register all handlers with the server.

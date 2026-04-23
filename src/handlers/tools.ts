@@ -1,5 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { SearchOptions } from '../schemas/search.js';
+import * as z from 'zod/v4';
+import { SearchOptions, SearchResultsSchema, CategoriesToolOutputSchema } from '../schemas/search.js';
 import { SearchService } from '../services/search.js';
 import { ProductService } from '../services/products.js';
 import { InvoiceService } from '../services/invoices.js';
@@ -8,414 +9,266 @@ import { MiscService } from '../services/misc.js';
 import { productCategories } from '../constants/categories.js';
 import {
     CreateInvoiceRequest,
-    CreateInvoiceRequestSchema
+    InvoiceResponseSchema,
+    InvoiceListOptionsSchema,
+    InvoiceListResponseSchema,
+    InvoiceDetailResponseSchema,
+    PayInvoiceResponseSchema,
 } from '../schemas/invoice.js';
-import { z } from 'zod';
+import { ProductDetailResponseSchema } from '../schemas/detail.js';
+import {
+    OrderListOptionsSchema,
+    OrderListResponseSchema,
+    OrderDetailResponseSchema,
+    UnsealedOrderResponseSchema,
+} from '../schemas/order.js';
+import { AccountBalanceResponseSchema, PingResponseSchema } from '../schemas/misc.js';
+
+function jsonText(data: unknown): { type: 'text'; text: string } {
+    return { type: 'text', text: JSON.stringify(data, null, 2) };
+}
+
+function toolOk(data: object) {
+    return {
+        content: [jsonText(data)],
+        structuredContent: { ...data },
+    };
+}
+
+function toolErr(error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return {
+        content: [jsonText({ error: errorMessage })],
+        isError: true,
+    };
+}
 
 /**
  * Register tool handlers with the server
  * @param server - MCP server instance
  */
 export function registerToolHandlers(server: McpServer): void {
-    /**
-   * Search tool
-   * Allows searching for gift cards, esims, mobile topups and more.
-   * @param args - Search arguments
-   * @returns Search results
-   */
-    server.tool(
+    server.registerTool(
         'search',
-        "Search for gift cards, esims, mobile topups and more. It's suggested to use the `categories` tool before searching for products, to have a better understanding of what's available.",
-        SearchOptions,
+        {
+            title: 'Search products',
+            description:
+                "Search for gift cards, esims, mobile topups and more. It's suggested to use the `categories` tool before searching for products, to have a better understanding of what's available.",
+            inputSchema: SearchOptions,
+            outputSchema: SearchResultsSchema.shape,
+        },
         async (args) => {
             try {
                 const searchResults = await SearchService.search(args.query, args);
-                return {
-                    content: [
-                        { type: 'text' as const, text: JSON.stringify(searchResults, null, 2) }
-                    ]
-                };
+                return toolOk(searchResults);
             } catch (error) {
-                const errorMessage = error instanceof Error ? error.message : String(error);
-                return {
-                    content: [
-                        {
-                            type: 'text' as const,
-                            text: JSON.stringify({ error: errorMessage }, null, 2),
-                        },
-                    ],
-                    isError: true,
-                };
+                return toolErr(error);
             }
         }
     );
 
-    /**
-   * Detail tool
-   * Retrieves detailed information about a specific product.
-   * @param args - Product identifier
-   * @returns Detailed product information
-   */
-    server.tool(
+    server.registerTool(
         'detail',
-        'Get detailed information about a product',
         {
-            id: z.string().describe('Unique identifier of the product'),
+            title: 'Product details',
+            description: 'Get detailed information about a product',
+            inputSchema: {
+                id: z.string().describe('Unique identifier of the product'),
+            },
+            outputSchema: ProductDetailResponseSchema.shape,
         },
         async (args) => {
             try {
                 const productDetail = await ProductService.getProductDetails(args.id);
-                return {
-                    content: [
-                        { type: 'text' as const, text: JSON.stringify(productDetail, null, 2) }
-                    ]
-                };
+                return toolOk(productDetail);
             } catch (error) {
-                const errorMessage = error instanceof Error ? error.message : String(error);
-                return {
-                    content: [
-                        {
-                            type: 'text' as const,
-                            text: JSON.stringify({ error: errorMessage }, null, 2),
-                        },
-                    ],
-                    isError: true,
-                };
+                return toolErr(error);
             }
         }
     );
 
-    /**
-   * Categories tool
-   * Provides a map of product types and their associated categories.
-   * @returns Complete product categories hierarchy
-   */
-    server.tool(
+    server.registerTool(
         'categories',
-        "Get the full product type/categories map. It's suggested to use this tool to get the categories and then use the `search` tool to search for products in a specific category.",
-        {},
+        {
+            title: 'Product categories',
+            description:
+                "Get the full product type/categories map. It's suggested to use this tool to get the categories and then use the `search` tool to search for products in a specific category.",
+            inputSchema: {},
+            outputSchema: CategoriesToolOutputSchema.shape,
+        },
         async () => {
-            return {
-                content: [
-                    { type: 'text' as const, text: JSON.stringify(productCategories, null, 2) }
-                ]
-            };
+            return toolOk({ categories: productCategories });
         }
     );
 
-    // Conditionally register the create_invoice tool only if the API key is available
     if (InvoiceService.isAvailable()) {
-    /**
-     * Create Invoice tool
-     * Creates a new invoice for products
-     * @param args - Invoice creation arguments
-     * @returns Invoice details
-     */
-        server.tool(
+        server.registerTool(
             'create_invoice',
-            'Create a new invoice for purchasing products with various payment methods',
-            CreateInvoiceRequest,
+            {
+                title: 'Create invoice',
+                description: 'Create a new invoice for purchasing products with various payment methods',
+                inputSchema: CreateInvoiceRequest,
+                outputSchema: InvoiceResponseSchema.shape,
+            },
             async (args) => {
                 try {
-                    const validatedArgs = CreateInvoiceRequestSchema.parse(args);
-                    const invoice = await InvoiceService.createInvoice(validatedArgs);
-                    return {
-                        content: [
-                            { type: 'text' as const, text: JSON.stringify(invoice, null, 2) }
-                        ]
-                    };
+                    const invoice = await InvoiceService.createInvoice(args);
+                    return toolOk(invoice);
                 } catch (error) {
-                    const errorMessage = error instanceof Error ? error.message : String(error);
-                    return {
-                        content: [
-                            {
-                                type: 'text' as const,
-                                text: JSON.stringify({ error: errorMessage }, null, 2),
-                            },
-                        ],
-                        isError: true,
-                    };
+                    return toolErr(error);
                 }
             }
         );
 
-        /**
-     * Get Invoices tool
-     * Retrieves a list of invoices
-     * @param args - Filtering options
-     * @returns List of invoices
-     */
-        server.tool(
+        server.registerTool(
             'get_invoices',
-            'Retrieve a list of invoices with optional filtering',
             {
-                start: z.number().int().nonnegative().optional().describe('Start index. Default: 0'),
-                limit: z.number().int().positive().max(50).optional().describe('Maximum number of records. Maximum/Default: 50'),
-                after: z.string().optional().describe('Start date for limiting results (Inclusive). Format: YYYY-MM-DD HH:MM:SS'),
-                before: z.string().optional().describe('End date for limiting results (Non-Inclusive). Format: YYYY-MM-DD HH:MM:SS'),
+                title: 'List invoices',
+                description: 'Retrieve a list of invoices with optional filtering',
+                inputSchema: InvoiceListOptionsSchema.shape,
+                outputSchema: InvoiceListResponseSchema.shape,
             },
             async (args) => {
                 try {
                     const invoices = await InvoiceService.getInvoices(args);
-                    return {
-                        content: [
-                            { type: 'text' as const, text: JSON.stringify(invoices, null, 2) }
-                        ]
-                    };
+                    return toolOk(invoices);
                 } catch (error) {
-                    const errorMessage = error instanceof Error ? error.message : String(error);
-                    return {
-                        content: [
-                            {
-                                type: 'text' as const,
-                                text: JSON.stringify({ error: errorMessage }, null, 2),
-                            },
-                        ],
-                        isError: true,
-                    };
+                    return toolErr(error);
                 }
             }
         );
 
-        /**
-     * Get Invoice by ID tool
-     * Retrieves a specific invoice by its ID
-     * @param args - Invoice ID
-     * @returns Invoice details
-     */
-        server.tool(
+        server.registerTool(
             'get_invoice',
-            'Retrieve details for a specific invoice by ID',
             {
-                id: z.string().describe('Unique invoice identifier'),
+                title: 'Get invoice',
+                description: 'Retrieve details for a specific invoice by ID',
+                inputSchema: {
+                    id: z.string().describe('Unique invoice identifier'),
+                },
+                outputSchema: InvoiceDetailResponseSchema.shape,
             },
             async (args) => {
                 try {
                     const invoice = await InvoiceService.getInvoiceById(args.id);
-                    return {
-                        content: [
-                            { type: 'text' as const, text: JSON.stringify(invoice, null, 2) }
-                        ]
-                    };
+                    return toolOk(invoice);
                 } catch (error) {
-                    const errorMessage = error instanceof Error ? error.message : String(error);
-                    return {
-                        content: [
-                            {
-                                type: 'text' as const,
-                                text: JSON.stringify({ error: errorMessage }, null, 2),
-                            },
-                        ],
-                        isError: true,
-                    };
+                    return toolErr(error);
                 }
             }
         );
 
-        /**
-     * Pay Invoice tool
-     * Pays an unpaid invoice
-     * @param args - Invoice ID
-     * @returns Payment result
-     */
-        server.tool(
+        server.registerTool(
             'pay_invoice',
-            "Pay an unpaid invoice (only works with 'balance' payment method)",
             {
-                id: z.string().describe('Unique invoice identifier'),
+                title: 'Pay invoice',
+                description: "Pay an unpaid invoice (only works with 'balance' payment method)",
+                inputSchema: {
+                    id: z.string().describe('Unique invoice identifier'),
+                },
+                outputSchema: PayInvoiceResponseSchema.shape,
             },
             async (args) => {
                 try {
                     const result = await InvoiceService.payInvoice(args.id);
-                    return {
-                        content: [
-                            { type: 'text' as const, text: JSON.stringify(result, null, 2) }
-                        ]
-                    };
+                    return toolOk(result);
                 } catch (error) {
-                    const errorMessage = error instanceof Error ? error.message : String(error);
-                    return {
-                        content: [
-                            {
-                                type: 'text' as const,
-                                text: JSON.stringify({ error: errorMessage }, null, 2),
-                            },
-                        ],
-                        isError: true,
-                    };
+                    return toolErr(error);
                 }
             }
         );
 
-        /**
-     * Get Orders tool
-     * Retrieves a list of orders
-     * @param args - Filtering options
-     * @returns List of orders
-     */
-        server.tool(
+        server.registerTool(
             'get_orders',
-            'Retrieve a list of orders with optional filtering',
             {
-                start: z.number().int().nonnegative().optional().describe('Start index. Default: 0'),
-                limit: z.number().int().positive().max(50).optional().describe('Maximum number of records. Maximum/Default: 50'),
-                after: z.string().optional().describe('Start date for limiting results (Inclusive). Format: YYYY-MM-DD HH:MM:SS'),
-                before: z.string().optional().describe('End date for limiting results (Non-Inclusive). Format: YYYY-MM-DD HH:MM:SS'),
+                title: 'List orders',
+                description: 'Retrieve a list of orders with optional filtering',
+                inputSchema: OrderListOptionsSchema.shape,
+                outputSchema: OrderListResponseSchema.shape,
             },
             async (args) => {
                 try {
                     const orders = await OrderService.getOrders(args);
-                    return {
-                        content: [
-                            { type: 'text' as const, text: JSON.stringify(orders, null, 2) }
-                        ]
-                    };
+                    return toolOk(orders);
                 } catch (error) {
-                    const errorMessage = error instanceof Error ? error.message : String(error);
-                    return {
-                        content: [
-                            {
-                                type: 'text' as const,
-                                text: JSON.stringify({ error: errorMessage }, null, 2),
-                            },
-                        ],
-                        isError: true,
-                    };
+                    return toolErr(error);
                 }
             }
         );
 
-        /**
-     * Get Order by ID tool
-     * Retrieves a specific order by its ID
-     * @param args - Order ID
-     * @returns Order details
-     */
-        server.tool(
+        server.registerTool(
             'get_order',
-            'Retrieve details for a specific order by ID',
             {
-                id: z.string().describe('Unique order identifier'),
+                title: 'Get order',
+                description: 'Retrieve details for a specific order by ID',
+                inputSchema: {
+                    id: z.string().describe('Unique order identifier'),
+                },
+                outputSchema: OrderDetailResponseSchema.shape,
             },
             async (args) => {
                 try {
                     const order = await OrderService.getOrderById(args.id);
-                    return {
-                        content: [
-                            { type: 'text' as const, text: JSON.stringify(order, null, 2) }
-                        ]
-                    };
+                    return toolOk(order);
                 } catch (error) {
-                    const errorMessage = error instanceof Error ? error.message : String(error);
-                    return {
-                        content: [
-                            {
-                                type: 'text' as const,
-                                text: JSON.stringify({ error: errorMessage }, null, 2),
-                            },
-                        ],
-                        isError: true,
-                    };
+                    return toolErr(error);
                 }
             }
         );
 
-        /**
-     * Unseal Order tool
-     * Reveals codes and PINs for a specific order
-     * @param args - Order ID
-     * @returns Unsealed order details
-     */
-        server.tool(
+        server.registerTool(
             'unseal_order',
-            'Reveal codes and PINs for a specific order by ID',
             {
-                id: z.string().describe('Unique order identifier'),
+                title: 'Unseal order',
+                description: 'Reveal codes and PINs for a specific order by ID',
+                inputSchema: {
+                    id: z.string().describe('Unique order identifier'),
+                },
+                outputSchema: UnsealedOrderResponseSchema.shape,
             },
             async (args) => {
                 try {
                     const order = await OrderService.unsealOrder(args.id);
-                    return {
-                        content: [
-                            { type: 'text' as const, text: JSON.stringify(order, null, 2) }
-                        ]
-                    };
+                    return toolOk(order);
                 } catch (error) {
-                    const errorMessage = error instanceof Error ? error.message : String(error);
-                    return {
-                        content: [
-                            {
-                                type: 'text' as const,
-                                text: JSON.stringify({ error: errorMessage }, null, 2),
-                            },
-                        ],
-                        isError: true,
-                    };
+                    return toolErr(error);
                 }
             }
         );
 
-        /**
-     * Get Account Balance tool
-     * Retrieves the account balance
-     * @returns Account balance
-     */
-        server.tool(
+        server.registerTool(
             'get_account_balance',
-            'Retrieve your account balance',
-            {},
+            {
+                title: 'Account balance',
+                description: 'Retrieve your account balance',
+                inputSchema: {},
+                outputSchema: AccountBalanceResponseSchema.shape,
+            },
             async () => {
                 try {
                     const balance = await MiscService.getAccountBalance();
-                    return {
-                        content: [
-                            { type: 'text' as const, text: JSON.stringify(balance, null, 2) }
-                        ]
-                    };
+                    return toolOk(balance);
                 } catch (error) {
-                    const errorMessage = error instanceof Error ? error.message : String(error);
-                    return {
-                        content: [
-                            {
-                                type: 'text' as const,
-                                text: JSON.stringify({ error: errorMessage }, null, 2),
-                            },
-                        ],
-                        isError: true,
-                    };
+                    return toolErr(error);
                 }
             }
         );
     }
 
-    /**
-   * Ping tool
-   * Checks if the API is available
-   * @returns Ping response
-   */
-    server.tool(
+    server.registerTool(
         'ping',
-        'Check if the Bitrefill API is available',
-        {},
+        {
+            title: 'Ping API',
+            description: 'Check if the Bitrefill API is available',
+            inputSchema: {},
+            outputSchema: PingResponseSchema.shape,
+        },
         async () => {
             try {
                 const ping = await MiscService.ping();
-                return {
-                    content: [
-                        { type: 'text' as const, text: JSON.stringify(ping, null, 2) }
-                    ]
-                };
+                return toolOk(ping);
             } catch (error) {
-                const errorMessage = error instanceof Error ? error.message : String(error);
-                return {
-                    content: [
-                        {
-                            type: 'text' as const,
-                            text: JSON.stringify({ error: errorMessage }, null, 2),
-                        },
-                    ],
-                    isError: true,
-                };
+                return toolErr(error);
             }
         }
     );

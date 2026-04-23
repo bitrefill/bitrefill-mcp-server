@@ -1,7 +1,7 @@
 /**
  * Type definitions for Bitrefill MCP server
  */
-import { z } from 'zod';
+import * as z from 'zod/v4';
 
 /**
  * Product Detail Response schema for the complete product details from API
@@ -30,7 +30,7 @@ export const ProductDetailResponseSchema = z.object({
         popularity: z.number().optional(),
         packageSize: z.number().optional(),
     }).optional(),
-    countryStat: z.record(z.number()).optional(),
+    countryStat: z.record(z.string(), z.number()).optional(),
     countryCode: z.string(),
     countries: z.array(z.string()),
     recipientType: z.string().optional(),
@@ -63,15 +63,15 @@ export const ProductDetailResponseSchema = z.object({
         amount: z.number(),
         eurPrice: z.number(),
         usdPrice: z.number(),
-        prices: z.record(z.number()),
+        prices: z.record(z.string(), z.number()),
     })),
     currency: z.string(),
     terms: z.string().optional(),
     termsLink: z.string().optional(),
-    languages: z.record(z.boolean()).optional(),
-    descriptions: z.record(z.string()).optional(),
-    subtitles: z.record(z.string()).optional(),
-    instructions: z.record(z.string()).optional(),
+    languages: z.record(z.string(), z.boolean()).optional(),
+    descriptions: z.record(z.string(), z.string()).optional(),
+    subtitles: z.record(z.string(), z.string()).optional(),
+    instructions: z.record(z.string(), z.string()).optional(),
     redemptionMethods: z.array(z.string()).optional(),
     relatedX: z.array(z.object({
         _id: z.string(),
@@ -100,8 +100,8 @@ export const ProductDetailResponseSchema = z.object({
         _ratingValue: z.number().optional(),
         _reviewCount: z.number().optional(),
         _priceRange: z.string().optional(),
-        _expandedCC: z.record(z.number()).optional(),
-        _sortOrderCC: z.record(z.number()).optional(),
+        _expandedCC: z.record(z.string(), z.number()).optional(),
+        _sortOrderCC: z.record(z.string(), z.number()).optional(),
         logoBackground: z.string().optional(),
         logoNoMargin: z.boolean().optional(),
         label: z.string().optional(),
@@ -113,7 +113,7 @@ export const ProductDetailResponseSchema = z.object({
     _ratingValue: z.number().optional(),
     _reviewCount: z.number().optional(),
     _priceRange: z.string().optional(),
-    _expandedCC: z.record(z.number()).optional(),
+    _expandedCC: z.record(z.string(), z.number()).optional(),
 });
 
 /**

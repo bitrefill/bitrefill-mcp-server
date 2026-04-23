@@ -1,7 +1,7 @@
 /**
  * Type definitions for Bitrefill Invoice API
  */
-import { z } from 'zod';
+import * as z from 'zod/v4';
 import { paymentMethods } from '../constants/payment_methods.js';
 
 /**
@@ -119,37 +119,34 @@ export type PayInvoiceResponse = z.infer<typeof PayInvoiceResponseSchema>;
 /**
  * Product item schema for invoice creation
  */
-export const InvoiceProductSchema = z.object({
-    product_id: z.string().describe('Required: Product slug/ID'),
-    quantity: z
-        .number()
-        .int()
-        .positive()
-        .optional()
-        .describe('Optional: Default is 1'),
-    value: z.number().optional().describe('Required for variable-value products. Use the exact value present in packages.amount for the package to buy'),
-    package_id: z
-        .string()
-        .optional()
-        .describe('Alternative to value for package selection'),
-    phone_number: z.string().optional().describe('Required for phone top-ups'),
-    send_email: z
-        .boolean()
-        .optional()
-        .describe('Optional: Whether to send email for this product'),
-    send_sms: z
-        .boolean()
-        .optional()
-        .describe('Optional: Whether to send SMS for this product'),
-});
-
-// Ensure one between value or package_id must be present
-InvoiceProductSchema.refine(
-    (data) => data.value !== undefined || data.package_id !== undefined,
-    {
-        message: 'Either value or package_id must be present',
-    }
-);
+export const InvoiceProductSchema = z
+    .object({
+        product_id: z.string().describe('Required: Product slug/ID'),
+        quantity: z
+            .number()
+            .int()
+            .positive()
+            .optional()
+            .describe('Optional: Default is 1'),
+        value: z.number().optional().describe('Required for variable-value products. Use the exact value present in packages.amount for the package to buy'),
+        package_id: z
+            .string()
+            .optional()
+            .describe('Alternative to value for package selection'),
+        phone_number: z.string().optional().describe('Required for phone top-ups'),
+        send_email: z
+            .boolean()
+            .optional()
+            .describe('Optional: Whether to send email for this product'),
+        send_sms: z
+            .boolean()
+            .optional()
+            .describe('Optional: Whether to send SMS for this product'),
+    })
+    .refine(
+        (data) => data.value !== undefined || data.package_id !== undefined,
+        'Either value or package_id must be present'
+    );
 
 /**
  * Invoice creation request schema
@@ -163,7 +160,6 @@ export const CreateInvoiceRequest = {
         .enum(['balance', 'bitcoin', 'lightning', 'ethereum'])
         .describe(`Required payment method. Available methods: ${paymentMethods.join(', ')}`),
     webhook_url: z
-        .string()
         .url()
         .optional()
         .describe('Optional: URL for webhook notifications'),

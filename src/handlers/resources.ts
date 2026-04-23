@@ -1,11 +1,13 @@
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { ResourceTemplate, type McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { productCategories } from '../constants/categories.js';
 import { paymentMethods } from '../constants/payment_methods.js';
 
-// Type for product types to help TypeScript understand valid keys
 type ProductType = keyof typeof productCategories;
+
+function isProductType(value: unknown): value is ProductType {
+    return typeof value === 'string' && Object.prototype.hasOwnProperty.call(productCategories, value);
+}
 
 /**
  * Register resource handlers with the server
@@ -13,12 +15,17 @@ type ProductType = keyof typeof productCategories;
  */
 export function registerResourceHandlers(server: McpServer): void {
     /**
-   * Static resource for payment methods
-   * Exposes all available payment methods
-   */
-    server.resource(
+     * Static resource for payment methods
+     * Exposes all available payment methods
+     */
+    server.registerResource(
         'payment-methods',
         'bitrefill://payment-methods',
+        {
+            title: 'Payment methods',
+            description: 'All payment methods accepted by Bitrefill',
+            mimeType: 'application/json',
+        },
         async (uri) => ({
             contents: [
                 {
@@ -31,12 +38,17 @@ export function registerResourceHandlers(server: McpServer): void {
     );
 
     /**
-   * Static resource for product types
-   * Exposes all available product types
-   */
-    server.resource(
+     * Static resource for product types
+     * Exposes all available product types
+     */
+    server.registerResource(
         'product-types',
         'bitrefill://product-types',
+        {
+            title: 'Product types',
+            description: 'List of product type keys (e.g. gift cards, mobile top-up)',
+            mimeType: 'application/json',
+        },
         async (uri) => ({
             contents: [
                 {
@@ -55,10 +67,10 @@ export function registerResourceHandlers(server: McpServer): void {
     );
 
     /**
-   * Dynamic resource for categories of a specific product type
-   * Returns categories for the requested product type
-   */
-    server.resource(
+     * Dynamic resource for categories of a specific product type
+     * Returns categories for the requested product type
+     */
+    server.registerResource(
         'product-categories',
         new ResourceTemplate('bitrefill://product-types/{productType}', {
             list: async () => ({
@@ -68,20 +80,18 @@ export function registerResourceHandlers(server: McpServer): void {
                 })),
             }),
         }),
+        {
+            title: 'Product categories by type',
+            description: 'Categories available for a given product type (URI template)',
+            mimeType: 'application/json',
+        },
         async (uri, { productType }) => {
-            // Check if the product type is valid
-            if (
-                typeof productType !== 'string' ||
-        !Object.keys(productCategories).includes(productType)
-            ) {
+            if (!isProductType(productType)) {
                 throw new McpError(
                     ErrorCode.InvalidRequest,
-                    `Invalid product type: ${productType}`
+                    `Invalid product type: ${String(productType)}`
                 );
             }
-
-            // Now TypeScript knows productType is a valid key
-            const typedProductType = productType as ProductType;
 
             return {
                 contents: [
@@ -91,7 +101,7 @@ export function registerResourceHandlers(server: McpServer): void {
                         text: JSON.stringify(
                             {
                                 productType,
-                                categories: productCategories[typedProductType],
+                                categories: productCategories[productType],
                             },
                             null,
                             2

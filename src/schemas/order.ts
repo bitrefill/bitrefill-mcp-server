@@ -1,7 +1,7 @@
 /**
  * Type definitions for Bitrefill Order API
  */
-import { z } from 'zod';
+import * as z from 'zod/v4';
 
 /**
  * Order list request options schema
