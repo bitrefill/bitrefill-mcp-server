@@ -2,12 +2,9 @@
   "mcpServers": {
     "bitrefill": {
       "command": "node",
-      "args": [
-        "./build/index.js"
-      ],
+      "args": ["./build/index.js"],
       "env": {
-        "BITREFILL_API_SECRET": "your-api-secret-here",
-        "BITREFILL_API_ID": "your-api-id-here"
+        "BITREFILL_API_KEY": "your-api-key-here"
       }
     }
   }

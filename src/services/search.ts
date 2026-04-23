@@ -1,29 +1,24 @@
-import {
-    SearchOptionsSchema,
-    SearchOptionsType,
-    SearchResults,
-} from '../schemas/search.js';
-import { publicApiClient } from '../utils/api/public.js';
+import { SearchProductsInputSchema, type SearchProductsInput } from '../schemas/search.js';
+import { authenticatedApiClient } from '../utils/api/authenticated.js';
+import type { ListEnvelope, Product } from '../types/api.js';
 
 /**
- * Service for searching Bitrefill products
- * Uses the PublicApiClient for API requests
+ * Product search (GET /v2/products/search) or browse (GET /v2/products)
  */
 export class SearchService {
-    /**
-   * Search for products by query with optional parameters
-   * @param query - Search query string
-   * @param options - Additional search options
-   * @returns Search results
-   */
-    public static async search(
-        query: string,
-        options: Partial<SearchOptionsType> = {}
-    ): Promise<SearchResults> {
-    // Validate options
-        const validatedOptions = SearchOptionsSchema.parse(options);
+    public static async searchProducts(
+        input: SearchProductsInput
+    ): Promise<ListEnvelope<Product[]>> {
+        const parsed = SearchProductsInputSchema.parse(input);
+        const q = parsed.q?.trim();
 
-        // Use the public API client to perform the search
-        return publicApiClient.search(query, validatedOptions);
+        if (q) {
+            return authenticatedApiClient.searchProducts({
+                ...parsed,
+                q,
+            });
+        }
+
+        return authenticatedApiClient.getProducts(parsed);
     }
 }

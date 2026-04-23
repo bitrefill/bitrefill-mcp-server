@@ -1,37 +1,30 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import * as z from 'zod/v4';
-import { SearchOptions, SearchResultsSchema, CategoriesToolOutputSchema } from '../schemas/search.js';
 import { SearchService } from '../services/search.js';
 import { ProductService } from '../services/products.js';
 import { InvoiceService } from '../services/invoices.js';
 import { OrderService } from '../services/orders.js';
 import { MiscService } from '../services/misc.js';
-import { productCategories } from '../constants/categories.js';
+import { EsimService } from '../services/esims.js';
+import { SearchProductsInput } from '../schemas/search.js';
+import { ProductIdInput } from '../schemas/detail.js';
+import { BuyProductsInput, InvoiceListInput, InvoiceIdInput } from '../schemas/invoice.js';
+import { OrderListInput, OrderIdInput } from '../schemas/order.js';
+import { CheckPhoneNumberInput } from '../schemas/misc.js';
 import {
-    CreateInvoiceRequest,
-    InvoiceResponseSchema,
-    InvoiceListOptionsSchema,
-    InvoiceListResponseSchema,
-    InvoiceDetailResponseSchema,
-    PayInvoiceResponseSchema,
-} from '../schemas/invoice.js';
-import { ProductDetailResponseSchema } from '../schemas/detail.js';
-import {
-    OrderListOptionsSchema,
-    OrderListResponseSchema,
-    OrderDetailResponseSchema,
-    UnsealedOrderResponseSchema,
-} from '../schemas/order.js';
-import { AccountBalanceResponseSchema, PingResponseSchema } from '../schemas/misc.js';
+    CreateEsimInvoiceInput,
+    EsimListInput,
+    EsimProductIdInput,
+    EsimIdInput,
+    EsimInvoiceIdInput,
+} from '../schemas/esim.js';
 
 function jsonText(data: unknown): { type: 'text'; text: string } {
     return { type: 'text', text: JSON.stringify(data, null, 2) };
 }
 
-function toolOk(data: object) {
+function toolOk(data: unknown) {
     return {
         content: [jsonText(data)],
-        structuredContent: { ...data },
     };
 }
 
@@ -43,233 +36,204 @@ function toolErr(error: unknown) {
     };
 }
 
-/**
- * Register tool handlers with the server
- * @param server - MCP server instance
- */
+async function runTool(fn: () => Promise<unknown>) {
+    try {
+        return toolOk(await fn());
+    } catch (error) {
+        return toolErr(error);
+    }
+}
+
+/** v2 is Bearer-only; all tools need BITREFILL_API_KEY (even ping). */
 export function registerToolHandlers(server: McpServer): void {
+    if (!MiscService.isAvailable()) {
+        console.error(
+            '[bitrefill-mcp-server] BITREFILL_API_KEY is not set. No tools are registered. Set BITREFILL_API_KEY in the environment.'
+        );
+        return;
+    }
+
     server.registerTool(
-        'search',
+        'search-products',
         {
             title: 'Search products',
             description:
-                "Search for gift cards, esims, mobile topups and more. It's suggested to use the `categories` tool before searching for products, to have a better understanding of what's available.",
-            inputSchema: SearchOptions,
-            outputSchema: SearchResultsSchema.shape,
+                'Search the catalog (GET /products/search) when `q` is set, or browse (GET /products) with country/category when `q` is omitted. Use `include_test_products` to list test products.',
+            inputSchema: SearchProductsInput,
         },
-        async (args) => {
-            try {
-                const searchResults = await SearchService.search(args.query, args);
-                return toolOk(searchResults);
-            } catch (error) {
-                return toolErr(error);
-            }
-        }
+        (args) => runTool(() => SearchService.searchProducts(args))
     );
 
     server.registerTool(
-        'detail',
+        'product-details',
         {
             title: 'Product details',
-            description: 'Get detailed information about a product',
-            inputSchema: {
-                id: z.string().describe('Unique identifier of the product'),
-            },
-            outputSchema: ProductDetailResponseSchema.shape,
+            description: 'GET /products/{id} — full product with packages, range, and stock',
+            inputSchema: ProductIdInput,
         },
-        async (args) => {
-            try {
-                const productDetail = await ProductService.getProductDetails(args.id);
-                return toolOk(productDetail);
-            } catch (error) {
-                return toolErr(error);
-            }
-        }
+        (args) => runTool(() => ProductService.getProductDetails(args.id))
     );
 
     server.registerTool(
-        'categories',
+        'buy-products',
         {
-            title: 'Product categories',
+            title: 'Buy products',
             description:
-                "Get the full product type/categories map. It's suggested to use this tool to get the categories and then use the `search` tool to search for products in a specific category.",
-            inputSchema: {},
-            outputSchema: CategoriesToolOutputSchema.shape,
+                'POST /invoices — create a purchase (max 20 lines). `auto_pay` with payment_method=balance charges immediately; otherwise pay with pay-invoice or crypto per invoice.payment.',
+            inputSchema: BuyProductsInput,
         },
-        async () => {
-            return toolOk({ categories: productCategories });
-        }
+        (args) => runTool(() => InvoiceService.buyProducts(args))
     );
 
-    if (InvoiceService.isAvailable()) {
-        server.registerTool(
-            'create_invoice',
-            {
-                title: 'Create invoice',
-                description: 'Create a new invoice for purchasing products with various payment methods',
-                inputSchema: CreateInvoiceRequest,
-                outputSchema: InvoiceResponseSchema.shape,
-            },
-            async (args) => {
-                try {
-                    const invoice = await InvoiceService.createInvoice(args);
-                    return toolOk(invoice);
-                } catch (error) {
-                    return toolErr(error);
-                }
-            }
-        );
+    server.registerTool(
+        'get-invoice-by-id',
+        {
+            title: 'Get invoice by id',
+            description: 'GET /invoices/{id}',
+            inputSchema: InvoiceIdInput,
+        },
+        (args) => runTool(() => InvoiceService.getInvoiceById(args.id))
+    );
 
-        server.registerTool(
-            'get_invoices',
-            {
-                title: 'List invoices',
-                description: 'Retrieve a list of invoices with optional filtering',
-                inputSchema: InvoiceListOptionsSchema.shape,
-                outputSchema: InvoiceListResponseSchema.shape,
-            },
-            async (args) => {
-                try {
-                    const invoices = await InvoiceService.getInvoices(args);
-                    return toolOk(invoices);
-                } catch (error) {
-                    return toolErr(error);
-                }
-            }
-        );
+    server.registerTool(
+        'get-order-by-id',
+        {
+            title: 'Get order by id',
+            description: 'GET /orders/{id} — includes redemption_info when status is delivered',
+            inputSchema: OrderIdInput,
+        },
+        (args) => runTool(() => OrderService.getOrderById(args.id))
+    );
 
-        server.registerTool(
-            'get_invoice',
-            {
-                title: 'Get invoice',
-                description: 'Retrieve details for a specific invoice by ID',
-                inputSchema: {
-                    id: z.string().describe('Unique invoice identifier'),
-                },
-                outputSchema: InvoiceDetailResponseSchema.shape,
-            },
-            async (args) => {
-                try {
-                    const invoice = await InvoiceService.getInvoiceById(args.id);
-                    return toolOk(invoice);
-                } catch (error) {
-                    return toolErr(error);
-                }
-            }
-        );
+    server.registerTool(
+        'list-invoices',
+        {
+            title: 'List invoices',
+            description: 'GET /invoices',
+            inputSchema: InvoiceListInput,
+        },
+        (args) => runTool(() => InvoiceService.getInvoices(args))
+    );
 
-        server.registerTool(
-            'pay_invoice',
-            {
-                title: 'Pay invoice',
-                description: "Pay an unpaid invoice (only works with 'balance' payment method)",
-                inputSchema: {
-                    id: z.string().describe('Unique invoice identifier'),
-                },
-                outputSchema: PayInvoiceResponseSchema.shape,
-            },
-            async (args) => {
-                try {
-                    const result = await InvoiceService.payInvoice(args.id);
-                    return toolOk(result);
-                } catch (error) {
-                    return toolErr(error);
-                }
-            }
-        );
+    server.registerTool(
+        'list-orders',
+        {
+            title: 'List orders',
+            description: 'GET /orders',
+            inputSchema: OrderListInput,
+        },
+        (args) => runTool(() => OrderService.getOrders(args))
+    );
 
-        server.registerTool(
-            'get_orders',
-            {
-                title: 'List orders',
-                description: 'Retrieve a list of orders with optional filtering',
-                inputSchema: OrderListOptionsSchema.shape,
-                outputSchema: OrderListResponseSchema.shape,
-            },
-            async (args) => {
-                try {
-                    const orders = await OrderService.getOrders(args);
-                    return toolOk(orders);
-                } catch (error) {
-                    return toolErr(error);
-                }
-            }
-        );
+    server.registerTool(
+        'pay-invoice',
+        {
+            title: 'Pay invoice from balance',
+            description: 'POST /invoices/{id}/pay — only for invoices created with payment_method=balance',
+            inputSchema: InvoiceIdInput,
+        },
+        (args) => runTool(() => InvoiceService.payInvoice(args.id))
+    );
 
-        server.registerTool(
-            'get_order',
-            {
-                title: 'Get order',
-                description: 'Retrieve details for a specific order by ID',
-                inputSchema: {
-                    id: z.string().describe('Unique order identifier'),
-                },
-                outputSchema: OrderDetailResponseSchema.shape,
-            },
-            async (args) => {
-                try {
-                    const order = await OrderService.getOrderById(args.id);
-                    return toolOk(order);
-                } catch (error) {
-                    return toolErr(error);
-                }
-            }
-        );
+    server.registerTool(
+        'get-account-balance',
+        {
+            title: 'Account balance',
+            description:
+                'GET /accounts/balance — `data.balance` is in the smallest unit of `data.currency` (e.g. cents for EUR)',
+            inputSchema: {},
+        },
+        () => runTool(() => MiscService.getAccountBalance())
+    );
 
-        server.registerTool(
-            'unseal_order',
-            {
-                title: 'Unseal order',
-                description: 'Reveal codes and PINs for a specific order by ID',
-                inputSchema: {
-                    id: z.string().describe('Unique order identifier'),
-                },
-                outputSchema: UnsealedOrderResponseSchema.shape,
-            },
-            async (args) => {
-                try {
-                    const order = await OrderService.unsealOrder(args.id);
-                    return toolOk(order);
-                } catch (error) {
-                    return toolErr(error);
-                }
-            }
-        );
-
-        server.registerTool(
-            'get_account_balance',
-            {
-                title: 'Account balance',
-                description: 'Retrieve your account balance',
-                inputSchema: {},
-                outputSchema: AccountBalanceResponseSchema.shape,
-            },
-            async () => {
-                try {
-                    const balance = await MiscService.getAccountBalance();
-                    return toolOk(balance);
-                } catch (error) {
-                    return toolErr(error);
-                }
-            }
-        );
-    }
+    server.registerTool(
+        'check-phone-number',
+        {
+            title: 'Check phone number',
+            description: 'GET /check_phone_number — resolve operator and refill product for an E.164 number',
+            inputSchema: CheckPhoneNumberInput,
+        },
+        (args) => runTool(() => MiscService.checkPhoneNumber(args))
+    );
 
     server.registerTool(
         'ping',
         {
             title: 'Ping API',
-            description: 'Check if the Bitrefill API is available',
+            description: 'GET /ping — verify Bearer token; rate limit 1 per 3s',
             inputSchema: {},
-            outputSchema: PingResponseSchema.shape,
         },
-        async () => {
-            try {
-                const ping = await MiscService.ping();
-                return toolOk(ping);
-            } catch (error) {
-                return toolErr(error);
-            }
-        }
+        () => runTool(() => MiscService.ping())
+    );
+
+    server.registerTool(
+        'list-esim-products',
+        {
+            title: 'List eSIM products',
+            description: 'GET /products/esims',
+            inputSchema: SearchProductsInput,
+        },
+        (args) => runTool(() => EsimService.listEsimProducts(args))
+    );
+
+    server.registerTool(
+        'get-esim-product',
+        {
+            title: 'Get eSIM product',
+            description: 'GET /products/esims/{id}',
+            inputSchema: EsimProductIdInput,
+        },
+        (args) => runTool(() => EsimService.getEsimProduct(args.id))
+    );
+
+    server.registerTool(
+        'create-esim-invoice',
+        {
+            title: 'Create eSIM invoice',
+            description:
+                'POST /esims — new eSIM or top-up (set esim_id ICCID on a line to top up). `value` is the package string, e.g. "3GB, 30 Days".',
+            inputSchema: CreateEsimInvoiceInput,
+        },
+        (args) => runTool(() => EsimService.createEsimInvoice(args))
+    );
+
+    server.registerTool(
+        'get-esim-invoice',
+        {
+            title: 'Get eSIM invoice',
+            description: 'GET /esims/invoice/{id}',
+            inputSchema: EsimInvoiceIdInput,
+        },
+        (args) => runTool(() => EsimService.getEsimInvoice(args.id))
+    );
+
+    server.registerTool(
+        'pay-esim-invoice',
+        {
+            title: 'Pay eSIM invoice',
+            description: 'POST /esims/invoice/{id}/pay',
+            inputSchema: EsimInvoiceIdInput,
+        },
+        (args) => runTool(() => EsimService.payEsimInvoice(args.id))
+    );
+
+    server.registerTool(
+        'list-esims',
+        {
+            title: 'List eSIMs on account',
+            description: 'GET /esims',
+            inputSchema: EsimListInput,
+        },
+        (args) => runTool(() => EsimService.listEsims(args))
+    );
+
+    server.registerTool(
+        'get-esim',
+        {
+            title: 'Get eSIM by ICCID',
+            description: 'GET /esims/{id}',
+            inputSchema: EsimIdInput,
+        },
+        (args) => runTool(() => EsimService.getEsim(args.id))
     );
 }

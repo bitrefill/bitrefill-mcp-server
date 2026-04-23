@@ -1,219 +1,83 @@
 /**
- * Type definitions for Bitrefill Invoice API
+ * Zod input schemas for Bitrefill invoice API
  */
 import * as z from 'zod/v4';
-import { paymentMethods } from '../constants/payment_methods.js';
+import { paymentMethodEnum, paymentMethods } from '../constants/payment_methods.js';
 
-/**
- * Invoice list request options schema
- */
-export const InvoiceListOptionsSchema = z.object({
-    start: z.number().int().nonnegative().optional().describe('Start index. Default: 0'),
-    limit: z.number().int().positive().max(50).optional().describe('Maximum number of records. Maximum/Default: 50'),
-    after: z.string().optional().describe('Start date for limiting results (Inclusive). Format: YYYY-MM-DD HH:MM:SS'),
-    before: z.string().optional().describe('End date for limiting results (Non-Inclusive). Format: YYYY-MM-DD HH:MM:SS'),
-});
+export const PaymentMethod = z.enum(paymentMethodEnum);
 
-/**
- * Invoice list options type
- */
-export type InvoiceListOptions = z.infer<typeof InvoiceListOptionsSchema>;
-
-/**
- * Get invoice by ID response schema
- */
-export const InvoiceDetailResponseSchema = z.object({
-    meta: z.object({
-        id: z.string(),
-        _endpoint: z.string(),
-    }),
-    data: z.object({
-        id: z.string().describe('Unique invoice identifier'),
-        created_time: z.string().describe('Creation timestamp'),
-        completed_time: z.string().optional().describe('Completion timestamp'),
-        status: z.string().describe('Invoice status'),
-        user: z.object({
-            id: z.string(),
-            email: z.string(),
-        }).optional(),
-        payment: z.object({
-            method: z.string().describe('Payment method'),
-            address: z.string().optional().describe('Payment address'),
-            currency: z.string().describe('Currency'),
-            price: z.number().describe('Price'),
-            status: z.string().describe('Payment status'),
-            commission: z.number().optional().describe('Commission'),
-        }),
-    }),
-});
-
-/**
- * Invoice detail response type
- */
-export type InvoiceDetailResponse = z.infer<typeof InvoiceDetailResponseSchema>;
-
-/**
- * Invoice list response schema
- */
-export const InvoiceListResponseSchema = z.object({
-    meta: z.object({
-        start: z.number(),
-        limit: z.number(),
-        after: z.string().optional(),
-        before: z.string().optional(),
-        _endpoint: z.string(),
-    }),
-    data: z.array(
-        z.object({
-            id: z.string().describe('Unique invoice identifier'),
-            created_time: z.string().describe('Creation timestamp'),
-            completed_time: z.string().optional().describe('Completion timestamp'),
-            status: z.string().describe('Invoice status'),
-            user: z.object({
-                id: z.string(),
-                email: z.string(),
-            }).optional(),
-            payment: z.object({
-                method: z.string().describe('Payment method'),
-                address: z.string().optional().describe('Payment address'),
-                currency: z.string().describe('Currency'),
-                price: z.number().describe('Price'),
-                status: z.string().describe('Payment status'),
-                commission: z.number().optional().describe('Commission'),
-            }),
-        })
-    ),
-});
-
-/**
- * Invoice list response type
- */
-export type InvoiceListResponse = z.infer<typeof InvoiceListResponseSchema>;
-
-/**
- * Pay invoice response schema
- */
-export const PayInvoiceResponseSchema = z.object({
-    meta: z.object({
-        id: z.string(),
-        _endpoint: z.string(),
-    }),
-    data: z.object({
-        id: z.string().describe('Unique invoice identifier'),
-        created_time: z.string().describe('Creation timestamp'),
-        completed_time: z.string().describe('Completion timestamp'),
-        status: z.string().describe('Invoice status after payment attempt'),
-        payment: z.object({
-            method: z.string().describe('Payment method'),
-            currency: z.string().describe('Currency'),
-            price: z.number().describe('Price'),
-            status: z.string().describe('Payment status after payment attempt'),
-        }),
-    }),
-});
-
-/**
- * Pay invoice response type
- */
-export type PayInvoiceResponse = z.infer<typeof PayInvoiceResponseSchema>;
-/**
- * Product item schema for invoice creation
- */
-export const InvoiceProductSchema = z
+const invoiceLineItem = z
     .object({
-        product_id: z.string().describe('Required: Product slug/ID'),
-        quantity: z
-            .number()
-            .int()
-            .positive()
+        product_id: z.string().describe('Product slug / ID from the catalog'),
+        quantity: z.number().int().positive().optional().describe('Line quantity (default 1)'),
+        value: z
+            .union([z.number(), z.string()])
             .optional()
-            .describe('Optional: Default is 1'),
-        value: z.number().optional().describe('Required for variable-value products. Use the exact value present in packages.amount for the package to buy'),
+            .describe('For ranged or test products: amount or label (e.g. package value)'),
         package_id: z
             .string()
             .optional()
-            .describe('Alternative to value for package selection'),
-        phone_number: z.string().optional().describe('Required for phone top-ups'),
-        send_email: z
-            .boolean()
-            .optional()
-            .describe('Optional: Whether to send email for this product'),
-        send_sms: z
-            .boolean()
-            .optional()
-            .describe('Optional: Whether to send SMS for this product'),
+            .describe('Fixed-denomination package id, e.g. product-id<&>50'),
+        phone_number: z.string().optional().describe('E.164 for phone top-ups'),
+        esim_id: z.string().optional().describe('ICCID for eSIM top-ups (use create-esim-invoice for eSIM)'),
     })
-    .refine(
-        (data) => data.value !== undefined || data.package_id !== undefined,
-        'Either value or package_id must be present'
-    );
+    .refine((d) => d.value !== undefined || d.package_id !== undefined, {
+        message: 'Each product line must include either `value` or `package_id`',
+    });
 
-/**
- * Invoice creation request schema
- */
-export const CreateInvoiceRequest = {
+export const BuyProductsInput = {
     products: z
-        .array(InvoiceProductSchema)
+        .array(invoiceLineItem)
         .min(1)
-        .describe('Array of products to include in the invoice'),
-    payment_method: z
-        .enum(['balance', 'bitcoin', 'lightning', 'ethereum'])
-        .describe(`Required payment method. Available methods: ${paymentMethods.join(', ')}`),
-    webhook_url: z
-        .url()
-        .optional()
-        .describe('Optional: URL for webhook notifications'),
+        .max(20)
+        .describe('Products to purchase (max 20 lines)'),
+    payment_method: PaymentMethod.default('balance').describe(
+        `Payment method. One of: ${paymentMethods.join(', ')}`
+    ),
     auto_pay: z
         .boolean()
         .optional()
-        .describe('Optional: Automatically pay with balance'),
-};
-
-export const CreateInvoiceRequestSchema = z.object(CreateInvoiceRequest);
-
-/**
- * Invoice creation request type
- */
-export type CreateInvoiceRequest = z.infer<typeof CreateInvoiceRequestSchema>;
-
-/**
- * Invoice response schema
- */
-export const InvoiceResponseSchema = z.object({
-    id: z.string().describe('Unique invoice identifier'),
-    status: z.string().describe('Invoice status'),
-    created_at: z.string().describe('Creation timestamp'),
-    expires_at: z.string().describe('Expiration timestamp'),
-    amount: z.number().describe('Invoice amount'),
-    currency: z.string().describe('Invoice currency'),
-    payment_method: z.string().describe('Payment method'),
-    payment_url: z
+        .describe('Only with payment_method=balance: pay immediately from account balance'),
+    webhook_url: z
+        .url()
+        .optional()
+        .describe('URL for final-state invoice webhooks'),
+    email: z.string().email().optional().describe('Receipt email'),
+    send_email: z.boolean().optional().describe('Send purchase email'),
+    refund_address: z
         .string()
         .optional()
-        .describe('URL for payment (if applicable)'),
-    products: z
-        .array(
-            z.object({
-                product_id: z.string(),
-                name: z.string().optional(),
-                quantity: z.number(),
-                price: z.number(),
-            })
-        )
-        .describe('Products included in this invoice'),
-    payment_details: z
-        .object({
-            address: z.string().optional(),
-            lightning_invoice: z.string().optional(),
-            amount_btc: z.number().optional(),
-            amount_sat: z.number().optional(),
-            exchange_rate: z.number().optional(),
-        })
-        .optional()
-        .describe('Payment-specific details'),
-});
+        .describe('Required for crypto payment methods: refund address'),
+};
 
-/**
- * Invoice response type
- */
-export type InvoiceResponse = z.infer<typeof InvoiceResponseSchema>;
+export const BuyProductsInputSchema = z.object(BuyProductsInput);
+export type BuyProductsInput = z.infer<typeof BuyProductsInputSchema>;
+
+export const InvoiceListInput = {
+    start: z.number().int().nonnegative().optional().describe('Pagination start (default 0)'),
+    limit: z
+        .number()
+        .int()
+        .positive()
+        .max(50)
+        .optional()
+        .describe('Page size (max 50)'),
+    after: z
+        .string()
+        .optional()
+        .describe('Inclusive start date filter: YYYY-MM-DD HH:MM:SS'),
+    before: z
+        .string()
+        .optional()
+        .describe('Non-inclusive end date filter: YYYY-MM-DD HH:MM:SS'),
+};
+
+export const InvoiceListInputSchema = z.object(InvoiceListInput);
+export type InvoiceListInput = z.infer<typeof InvoiceListInputSchema>;
+
+export const InvoiceIdInput = {
+    id: z.string().describe('Invoice UUID'),
+};
+
+export const InvoiceIdInputSchema = z.object(InvoiceIdInput);
+export type InvoiceIdType = z.infer<typeof InvoiceIdInputSchema>;

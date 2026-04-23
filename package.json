@@ -1,7 +1,7 @@
 {
   "name": "bitrefill-mcp-server",
-  "version": "0.3.0",
-  "description": "Shop for gift cards, mobile refills, and digital services on Bitrefill using cryptocurrency",
+  "version": "1.0.0",
+  "description": "MCP server for the Bitrefill API v2 (Bearer API key) — products, invoices, orders, and eSIMs",
   "keywords": [
     "bitrefill",
     "gift cards",
@@ -26,13 +26,12 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --cache --cache-location .cache/eslintcache",
     "lint:ci": "eslint . --cache --cache-location .cache/eslintcache --cache-strategy content",
-    "inspector": "pnpm dlx @modelcontextprotocol/inspector build/index.js",
-    "test-services": "node test-services.js"
+    "inspector": "pnpm dlx @modelcontextprotocol/inspector node build/index.js"
   },
   "packageManager": "pnpm@10.10.0",
   "engines": {
-    "node": "^24.15.0",
-    "pnpm": ">=10.10.0"
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
   },
   "pnpm": {
     "overrides": {

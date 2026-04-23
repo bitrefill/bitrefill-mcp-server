@@ -1,282 +1,221 @@
 /**
- * Authenticated API client for Bitrefill endpoints that require API key authentication
+ * Bitrefill API v2 — Bearer ${BITREFILL_API_KEY} only
  */
-import {
-    CreateInvoiceRequest,
-    InvoiceResponse,
-    InvoiceListOptions,
-    InvoiceListResponse,
-    InvoiceDetailResponse,
-    PayInvoiceResponse
-} from '../../schemas/invoice.js';
-import {
-    OrderListOptions,
-    OrderListResponse,
-    OrderDetailResponse,
-    UnsealedOrderResponse
-} from '../../schemas/order.js';
-import {
+import type { BuyProductsInput, InvoiceListInput } from '../../schemas/invoice.js';
+import type { CreateEsimInvoiceInput, EsimListInput } from '../../schemas/esim.js';
+import type { OrderListInput } from '../../schemas/order.js';
+import type { SearchProductsInput } from '../../schemas/search.js';
+import type {
+    Envelope,
+    ListEnvelope,
     PingResponse,
-    AccountBalanceResponse,
-} from '../../schemas/misc.js';
+    Product,
+    EsimListItem,
+} from '../../types/api.js';
 import { BaseApiClient, DEFAULT_HEADERS } from './base.js';
 
-/**
- * Client for authenticated Bitrefill API endpoints (invoice creation, etc.)
- */
 export class AuthenticatedApiClient extends BaseApiClient {
-    /**
-   * Base URL for authenticated API endpoints
-   */
     protected readonly baseUrl = 'https://api.bitrefill.com/v2';
 
-    /**
-   * Context for logging
-   */
     protected readonly context = 'AuthenticatedApiClient';
 
-    /**
-   * Check if the client is properly configured with API credentials
-   * @returns True if the client is available, false otherwise
-   */
     public isAvailable(): boolean {
-        return (!!process.env.BITREFILL_API_SECRET && !!process.env.BITREFILL_API_ID);
+        return !!process.env.BITREFILL_API_KEY?.trim();
     }
 
-    /**
-   * Create a new invoice
-   * @param request - Invoice creation request
-   * @returns Invoice response
-   * @throws Error if the API request fails or if the API key is not set
-   */
-    public async createInvoice(
-        request: CreateInvoiceRequest
-    ): Promise<InvoiceResponse> {
-        if (!this.isAvailable()) {
-            const error = new Error('API credentials not configured. BITREFILL_API_SECRET and BITREFILL_API_ID environment variables must be set');
-            this.handleError(error);
-            throw error;
-        }
-
-        return this.makeRequest<InvoiceResponse>(
-            'invoices',
-            {
-                method: 'POST',
-                headers: {
-                    ...DEFAULT_HEADERS,
-                    'Content-Type': 'application/json',
-                    authorization: this.getAuthHeader(),
-                },
-                body: JSON.stringify(request),
-            }
-        );
-    }
-
-    /**
-   * Get a list of invoices
-   * @param options - Options for filtering invoices
-   * @returns List of invoices
-   * @throws Error if the API request fails or if the API key is not set
-   */
-    public async getInvoices(options?: InvoiceListOptions): Promise<InvoiceListResponse> {
-        if (!this.isAvailable()) {
-            const error = new Error('API credentials not configured');
-            this.handleError(error);
-            throw error;
-        }
-
-        return this.makeRequest<InvoiceListResponse>(
-            `invoices${this.buildQueryString(options)}`,
-            {
-                method: 'GET',
-                headers: {
-                    ...DEFAULT_HEADERS,
-                    authorization: this.getAuthHeader(),
-                },
-            }
-        );
-    }
-
-    /**
-   * Get an invoice by ID
-   * @param id - Invoice ID
-   * @returns Invoice details
-   * @throws Error if the API request fails or if the API key is not set
-   */
-    public async getInvoiceById(id: string): Promise<InvoiceDetailResponse> {
-        if (!this.isAvailable()) {
-            const error = new Error('API credentials not configured');
-            this.handleError(error);
-            throw error;
-        }
-
-        return this.makeRequest<InvoiceDetailResponse>(
-            `invoices/${id}`,
-            {
-                method: 'GET',
-                headers: {
-                    ...DEFAULT_HEADERS,
-                    authorization: this.getAuthHeader(),
-                },
-            }
-        );
-    }
-
-    /**
-   * Pay an invoice
-   * @param id - Invoice ID
-   * @returns Payment result
-   * @throws Error if the API request fails or if the API key is not set
-   */
-    public async payInvoice(id: string): Promise<PayInvoiceResponse> {
-        if (!this.isAvailable()) {
-            const error = new Error('API credentials not configured');
-            this.handleError(error);
-            throw error;
-        }
-
-        return this.makeRequest<PayInvoiceResponse>(
-            `invoices/${id}/pay`,
-            {
-                method: 'POST',
-                headers: {
-                    ...DEFAULT_HEADERS,
-                    authorization: this.getAuthHeader(),
-                },
-            }
-        );
-    }
-
-    /**
-   * Get a list of orders
-   * @param options - Options for filtering orders
-   * @returns List of orders
-   * @throws Error if the API request fails or if the API key is not set
-   */
-    public async getOrders(options?: OrderListOptions): Promise<OrderListResponse> {
-        if (!this.isAvailable()) {
-            const error = new Error('API credentials not configured');
-            this.handleError(error);
-            throw error;
-        }
-
-        return this.makeRequest<OrderListResponse>(
-            `orders${this.buildQueryString(options)}`,
-            {
-                method: 'GET',
-                headers: {
-                    ...DEFAULT_HEADERS,
-                    authorization: this.getAuthHeader(),
-                },
-            }
-        );
-    }
-
-    /**
-   * Get an order by ID
-   * @param id - Order ID
-   * @returns Order details
-   * @throws Error if the API request fails or if the API key is not set
-   */
-    public async getOrderById(id: string): Promise<OrderDetailResponse> {
-        if (!this.isAvailable()) {
-            const error = new Error('API credentials not configured');
-            this.handleError(error);
-            throw error;
-        }
-
-        return this.makeRequest<OrderDetailResponse>(
-            `orders/${id}`,
-            {
-                method: 'GET',
-                headers: {
-                    ...DEFAULT_HEADERS,
-                    authorization: this.getAuthHeader(),
-                },
-            }
-        );
-    }
-
-    /**
-   * Unseal an order by ID to reveal codes and PINs
-   * @param id - Order ID
-   * @returns Unsealed order details
-   * @throws Error if the API request fails or if the API key is not set
-   */
-    public async unsealOrder(id: string): Promise<UnsealedOrderResponse> {
-        if (!this.isAvailable()) {
-            const error = new Error('API credentials not configured');
-            this.handleError(error);
-            throw error;
-        }
-
-        return this.makeRequest<UnsealedOrderResponse>(
-            `orders/${id}/unseal`,
-            {
-                method: 'GET',
-                headers: {
-                    ...DEFAULT_HEADERS,
-                    authorization: this.getAuthHeader(),
-                },
-            }
-        );
-    }
-
-    /**
-   * Ping the API to check if it's available
-   * @returns Ping response
-   */
-    public async ping(): Promise<PingResponse> {
-        return this.makeRequest<PingResponse>(
-            'ping',
-            {
-                method: 'GET',
-                headers: DEFAULT_HEADERS,
-            }
-        );
-    }
-
-    /**
-   * Get account balance
-   * @returns Account balance
-   * @throws Error if the API request fails or if the API key is not set
-   */
-    public async getAccountBalance(): Promise<AccountBalanceResponse> {
-        if (!this.isAvailable()) {
-            const error = new Error('API credentials not configured');
-            this.handleError(error);
-            throw error;
-        }
-
-        return this.makeRequest<AccountBalanceResponse>(
-            'accounts/balance',
-            {
-                method: 'GET',
-                headers: {
-                    ...DEFAULT_HEADERS,
-                    authorization: this.getAuthHeader(),
-                },
-            }
-        );
-    }
-
-    /**
-   * Get the appropriate authentication header based on available credentials
-   * @returns Authentication header string
-   * @throws Error if required credentials are not available
-   */
     private getAuthHeader(): string {
-        const apiSecret = process.env.BITREFILL_API_SECRET;
-        const apiId = process.env.BITREFILL_API_ID;
-
-        if (apiSecret && apiId) {
-            // Use Basic Auth if both secret and id are provided
-            return `Basic ${Buffer.from(`${apiId}:${apiSecret}`).toString('base64')}`;
-        } else {
-            throw new Error('API credentials not configured. BITREFILL_API_ID or BITREFILL_API_TOKEN environment variables must be set');
+        const key = process.env.BITREFILL_API_KEY?.trim();
+        if (!key) {
+            throw new Error('BITREFILL_API_KEY is not set');
         }
+        return `Bearer ${key}`;
+    }
+
+    private authJsonHeaders(): HeadersInit {
+        return {
+            ...DEFAULT_HEADERS,
+            'Content-Type': 'application/json',
+            authorization: this.getAuthHeader(),
+        };
+    }
+
+    private authGetHeaders(): HeadersInit {
+        return {
+            ...DEFAULT_HEADERS,
+            authorization: this.getAuthHeader(),
+        };
+    }
+
+    // --- products ---
+
+    public async getProducts(
+        input: SearchProductsInput
+    ): Promise<ListEnvelope<Product[]>> {
+        return this.makeRequest<ListEnvelope<Product[]>>(
+            `products${this.buildQueryString({
+                start: input.start,
+                limit: input.limit,
+                country: input.country,
+                category: input.category,
+                include_test_products: input.include_test_products,
+            })}`,
+            { method: 'GET', headers: this.authGetHeaders() }
+        );
+    }
+
+    public async searchProducts(
+        input: SearchProductsInput & { q: string }
+    ): Promise<ListEnvelope<Product[]>> {
+        return this.makeRequest<ListEnvelope<Product[]>>(
+            `products/search${this.buildQueryString({
+                q: input.q,
+                start: input.start,
+                limit: input.limit,
+                include_test_products: input.include_test_products,
+            })}`,
+            { method: 'GET', headers: this.authGetHeaders() }
+        );
+    }
+
+    public async getProductById(id: string): Promise<Envelope<Product>> {
+        return this.makeRequest<Envelope<Product>>(`products/${encodeURIComponent(id)}`, {
+            method: 'GET',
+            headers: this.authGetHeaders(),
+        });
+    }
+
+    public async getEsimProducts(
+        input: Pick<SearchProductsInput, 'start' | 'limit' | 'include_test_products' | 'country' | 'category'>
+    ): Promise<ListEnvelope<Product[]>> {
+        return this.makeRequest<ListEnvelope<Product[]>>(
+            `products/esims${this.buildQueryString({
+                start: input.start,
+                limit: input.limit,
+                include_test_products: input.include_test_products,
+                country: input.country,
+                category: input.category,
+            })}`,
+            { method: 'GET', headers: this.authGetHeaders() }
+        );
+    }
+
+    public async getEsimProductById(id: string): Promise<Envelope<Product>> {
+        return this.makeRequest<Envelope<Product>>(
+            `products/esims/${encodeURIComponent(id)}`,
+            { method: 'GET', headers: this.authGetHeaders() }
+        );
+    }
+
+    // --- invoices / orders ---
+
+    public async buyProducts(body: BuyProductsInput): Promise<unknown> {
+        return this.makeRequest<unknown>('invoices', {
+            method: 'POST',
+            headers: this.authJsonHeaders(),
+            body: JSON.stringify(body),
+        });
+    }
+
+    public async getInvoices(
+        input?: InvoiceListInput
+    ): Promise<unknown> {
+        return this.makeRequest<unknown>(`invoices${this.buildQueryString(input as Record<string, unknown>)}`, {
+            method: 'GET',
+            headers: this.authGetHeaders(),
+        });
+    }
+
+    public async getInvoiceById(id: string): Promise<unknown> {
+        return this.makeRequest<unknown>(`invoices/${encodeURIComponent(id)}`, {
+            method: 'GET',
+            headers: this.authGetHeaders(),
+        });
+    }
+
+    public async payInvoice(id: string): Promise<unknown> {
+        return this.makeRequest<unknown>(`invoices/${encodeURIComponent(id)}/pay`, {
+            method: 'POST',
+            headers: this.authGetHeaders(),
+        });
+    }
+
+    public async getOrders(input?: OrderListInput): Promise<unknown> {
+        return this.makeRequest<unknown>(`orders${this.buildQueryString(input as Record<string, unknown>)}`, {
+            method: 'GET',
+            headers: this.authGetHeaders(),
+        });
+    }
+
+    public async getOrderById(id: string): Promise<unknown> {
+        return this.makeRequest<unknown>(`orders/${encodeURIComponent(id)}`, {
+            method: 'GET',
+            headers: this.authGetHeaders(),
+        });
+    }
+
+    // --- esims account ---
+
+    public async createEsimInvoice(body: CreateEsimInvoiceInput): Promise<unknown> {
+        return this.makeRequest<unknown>('esims', {
+            method: 'POST',
+            headers: this.authJsonHeaders(),
+            body: JSON.stringify(body),
+        });
+    }
+
+    public async getEsimInvoice(id: string): Promise<unknown> {
+        return this.makeRequest<unknown>(`esims/invoice/${encodeURIComponent(id)}`, {
+            method: 'GET',
+            headers: this.authGetHeaders(),
+        });
+    }
+
+    public async payEsimInvoice(id: string): Promise<unknown> {
+        return this.makeRequest<unknown>(`esims/invoice/${encodeURIComponent(id)}/pay`, {
+            method: 'POST',
+            headers: this.authGetHeaders(),
+        });
+    }
+
+    public async listEsims(input?: EsimListInput): Promise<ListEnvelope<EsimListItem[]>> {
+        return this.makeRequest<ListEnvelope<EsimListItem[]>>(
+            `esims${this.buildQueryString(input as Record<string, unknown>)}`,
+            { method: 'GET', headers: this.authGetHeaders() }
+        );
+    }
+
+    public async getEsim(iccid: string): Promise<Envelope<EsimListItem>> {
+        return this.makeRequest<Envelope<EsimListItem>>(
+            `esims/${encodeURIComponent(iccid)}`,
+            { method: 'GET', headers: this.authGetHeaders() }
+        );
+    }
+
+    // --- misc ---
+
+    public async ping(): Promise<PingResponse> {
+        return this.makeRequest<PingResponse>('ping', {
+            method: 'GET',
+            headers: this.authGetHeaders(),
+        });
+    }
+
+    public async getAccountBalance(): Promise<unknown> {
+        return this.makeRequest<unknown>('accounts/balance', {
+            method: 'GET',
+            headers: this.authGetHeaders(),
+        });
+    }
+
+    public async checkPhoneNumber(
+        phoneNumber: string,
+        operator?: string
+    ): Promise<unknown> {
+        return this.makeRequest<unknown>(
+            `check_phone_number${this.buildQueryString({ phone_number: phoneNumber, operator })}`,
+            { method: 'GET', headers: this.authGetHeaders() }
+        );
     }
 }
 
-// Export singleton instance
 export const authenticatedApiClient = new AuthenticatedApiClient();

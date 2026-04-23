@@ -1,49 +1,34 @@
-
-/**
- * Bitrefill MCP Server
- *
- * This MCP server provides tools for interacting with Bitrefill services:
- * - Search for gift cards and mobile topups
- * - Get detailed product information
- * - Browse product categories
- * - Create invoices for purchasing products
- */
+/** Bitrefill API v2 over MCP (stdio). Needs BITREFILL_API_KEY. Zod in; raw JSON out. */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { registerResourceHandlers } from './handlers/resources.js';
 import { registerToolHandlers } from './handlers/tools.js';
 import { logError } from './utils/index.js';
+import { MiscService } from './services/misc.js';
 import dotenv from 'dotenv';
 
-// Load environment variables from .env file
 dotenv.config();
 
-/**
- * Create an MCP server with capabilities for resources and tools.
- */
+if (!MiscService.isAvailable()) {
+    console.error(
+        '[bitrefill-mcp-server] BITREFILL_API_KEY is not set. Create an API key at https://www.bitrefill.com/account/developers and set BITREFILL_API_KEY in the environment.'
+    );
+}
+
 const server = new McpServer({
     name: 'bitrefill-mcp-server',
-    version: '0.3.0',
+    version: '1.0.0',
 });
 
-/**
- * Register all handlers with the server.
- */
 function registerHandlers(): void {
     registerResourceHandlers(server);
     registerToolHandlers(server);
 }
 
-/**
- * Start the server using stdio transport.
- * This allows the server to communicate via standard input/output streams.
- */
 async function main(): Promise<void> {
-    // Register all handlers
     registerHandlers();
 
-    // Connect using stdio transport
     const transport = new StdioServerTransport();
     await server.connect(transport);
 
@@ -51,7 +36,6 @@ async function main(): Promise<void> {
         logError(error as Error, 'Server Error');
     };
 
-    // Handle process termination
     process.on('SIGINT', async () => {
         try {
             await server.close();

@@ -1,156 +1,155 @@
-# Bitrefill MCP Server
+# Bitrefill MCP Server (Sample Implementation)
 
-A TypeScript-based MCP server that provides access to Bitrefill services, allowing you to search for gift cards, mobile topups, and more. This server implements the Model Context Protocol to expose Bitrefill functionality to AI assistants.
+> **This is a sample / reference implementation.** For production use, connect to the **official hosted Bitrefill eCommerce MCP** at `https://api.bitrefill.com/mcp` instead. It is maintained by Bitrefill, supports OAuth, and exposes the same tools without you having to run, deploy, or update anything.
+>
+> Use this repository if you want to **learn how a Bitrefill MCP can be built**, **fork it**, **extend it**, or **self-host a customized variant** on top of the [Bitrefill API v2](https://docs.bitrefill.com).
 
-## How It Works
+This server wraps the [Bitrefill API v2](https://docs.bitrefill.com) (`https://api.bitrefill.com/v2`) using **`Authorization: Bearer ${BITREFILL_API_KEY}`**. Only **request** parameters are validated with Zod; API responses are returned as JSON text unchanged.
 
-The server operates using the Model Context Protocol (MCP) to communicate with Claude and similar AI assistants. It:
+## Use the official remote MCP (recommended for production)
 
-1. Runs as a standalone process using stdio for communication
-2. Registers resources and tools for accessing Bitrefill services
-3. Interfaces with the Bitrefill API to provide product search and details
-4. Returns structured JSON responses that can be processed by AI assistants
+The [Bitrefill eCommerce MCP](https://docs.bitrefill.com/docs/ecommerce-mcp) is hosted by Bitrefill and is the recommended way to integrate with ChatGPT, Claude Desktop / Code, Cursor, and any other MCP-compatible client.
 
-### Architecture
+- **OAuth (recommended)**. Point your client at:
 
-The app server follows this architecture:
+  ```
+  https://api.bitrefill.com/mcp
+  ```
 
-```
-src/
-├── index.ts                # Main entry point
-├── constants/              # Static data
-│   ├── categories.ts       # Product categories
-│   └── payment_methods.ts  # Payment methods
-├── handlers/               # MCP request handlers
-│   ├── resources.ts        # Resource endpoints
-│   └── tools.ts            # Tool implementations
-├── schemas/                # Data validation schemas
-│   ├── detail.ts           # Product detail response types
-│   ├── invoice.ts          # Invoice schemas
-│   ├── misc.ts             # Miscellaneous schemas
-│   ├── order.ts            # Order schemas
-│   └── search.ts           # Search parameters and response types
-├── services/               # API services
-│   ├── invoices.ts         # Invoice service
-│   ├── misc.ts             # Miscellaneous services
-│   ├── orders.ts           # Order services
-│   ├── products.ts         # Product details service
-│   └── search.ts           # Search functionality
-└── utils/                  # Utility functions
-    ├── index.ts            # Error logging, etc.
-    └── api/                # API clients
-        ├── authenticated.ts # Authenticated API client
-        ├── base.ts         # Base API client
-        └── public.ts       # Public API client
-```
+  You'll be redirected to Bitrefill to sign in and authorize access. No API key handling required.
 
-## Features
+- **API key**. Append your key from [bitrefill.com/account/developers](https://www.bitrefill.com/account/developers):
 
-### Resources
-- `bitrefill://product-types` - List of available product types on Bitrefill
-- `bitrefill://categories/{type}` - List of available categories for a specific product type (e.g., `bitrefill://categories/gift-cards`)
+  ```
+  https://api.bitrefill.com/mcp/YOUR_API_KEY
+  ```
 
-### Tools
-- `search` - Search for gift cards, esims, mobile topups and more
-  - Required: `query` (e.g., 'Amazon', 'Netflix', 'AT&T' or '*' for all)
-  - Optional: `country`, `language`, `limit`, `skip`, `category`
-  
-- `detail` - Get detailed information about a product
-  - Required: `id` (product identifier)
+Setup guides per client: [ChatGPT](https://docs.bitrefill.com/docs/use-with-chatgpt), [Claude Desktop](https://docs.bitrefill.com/docs/use-with-claude-chat), [Claude Code](https://docs.bitrefill.com/docs/use-with-claude-code), [Cursor](https://docs.bitrefill.com/docs/use-with-cursor).
 
-- `categories` - Get the full product type/categories map
-  - No required parameters
+## When to use this repo instead
 
-- `create_invoice` - Create a new invoice for purchasing products (requires API key)
-  - Required: `products` (array of products to include in the invoice)
-    - Each product requires: `product_id`
-    - Optional product fields: `quantity`, `value`, `package_id`, `phone_number`, `email`, `send_email`, `send_sms`
-  - Required: `payment_method` (one of: "balance", "bitcoin", "lightning")
-  - Optional: `webhook_url`, `auto_pay`
+Run this local MCP only if you need to:
 
-- `get_invoices` - Retrieve a list of invoices with optional filtering
-  - Optional: `start`, `limit`, `after`, `before`
+- Study a working reference implementation of a Bitrefill MCP server.
+- Fork it to add custom tools, prompts, validation, logging, or routing.
+- Self-host inside a private network or air-gapped environment.
+- Experiment with a wider set of v2 endpoints (this sample exposes 18 tools, while the official remote MCP intentionally exposes a curated set of 7; see [eCommerce MCP](https://docs.bitrefill.com/docs/ecommerce-mcp#available-tools)).
 
-- `get_invoice` - Retrieve details for a specific invoice by ID
-  - Required: `id` (invoice identifier)
-
-- `pay_invoice` - Pay an unpaid invoice (only works with 'balance' payment method)
-  - Required: `id` (invoice identifier)
-
-- `get_orders` - Retrieve a list of orders with optional filtering
-  - Optional: `start`, `limit`, `after`, `before`
-
-- `get_order` - Retrieve details for a specific order by ID
-  - Required: `id` (order identifier)
-
-- `unseal_order` - Reveal codes and PINs for a specific order by ID
-  - Required: `id` (order identifier)
-
-- `get_account_balance` - Retrieve your account balance
-  - No required parameters
-
-- `ping` - Check if the Bitrefill API is available
-  - No required parameters
+For everyday "buy gift cards / eSIMs from my AI assistant" use cases, prefer the hosted server above.
 
 ## Configuration
 
-### API Key Setup
+1. Create an API key: [Bitrefill account → Developers](https://www.bitrefill.com/account/developers).
+2. Set in the environment (or `.env` for local runs):
 
-To use the all the tools that rely on the Bitrefill API except for `search`, `categories` and `detail`, you need to set up Bitrefill API credentials:
+```bash
+BITREFILL_API_KEY=your_api_key_here
+```
 
-1. Create a Bitrefill account
-2. Ask for a developer API key by filing a request on [this form](https://bitrefill.typeform.com/to/BDmIVEsH?typeform-source=www.github.com)
-3. Create a `.env` file in the root directory (you can copy from `.env.example`)
-4. Add your Bitrefill API credentials:
-   ```
-   BITREFILL_API_SECRET=your_api_key_here
-   BITREFILL_API_ID=your_api_id_here
-   ```
+If `BITREFILL_API_KEY` is missing, **no tools** are registered (v2 requires authentication even for `ping`).
 
-The `create_invoice` tool will only be available if the API credentials are set. If the API credentials are not set, the tool will not be registered and won't appear in the list of available tools.
+## Tools (v1.0.0)
+
+| Tool | API |
+|------|-----|
+| `search-products` | `GET /products/search` (with `q`) or `GET /products` (browse) |
+| `product-details` | `GET /products/{id}` |
+| `buy-products` | `POST /invoices` |
+| `get-invoice-by-id` | `GET /invoices/{id}` |
+| `get-order-by-id` | `GET /orders/{id}` |
+| `list-invoices` | `GET /invoices` |
+| `list-orders` | `GET /orders` |
+| `pay-invoice` | `POST /invoices/{id}/pay` |
+| `get-account-balance` | `GET /accounts/balance` |
+| `check-phone-number` | `GET /check_phone_number` |
+| `ping` | `GET /ping` |
+| `list-esim-products` | `GET /products/esims` |
+| `get-esim-product` | `GET /products/esims/{id}` |
+| `create-esim-invoice` | `POST /esims` |
+| `get-esim-invoice` | `GET /esims/invoice/{id}` |
+| `pay-esim-invoice` | `POST /esims/invoice/{id}/pay` |
+| `list-esims` | `GET /esims` |
+| `get-esim` | `GET /esims/{id}` |
+
+**Breaking change vs 0.x:** old snake_case tool names (`search`, `create_invoice`, `unseal_order`, ...) were removed. Use the names above. There is no `unseal_order` in v2; `GET /orders/{id}` returns `redemption_info` when delivered.
+
+## Resources
+
+- `bitrefill://payment-methods`: allowed `payment_method` strings for `buy-products` / `create-esim-invoice`
+- `bitrefill://category-slugs`: B2B `category` query values for product list/search
+- `bitrefill://product-types`: product family keys
+- `bitrefill://product-types/{productType}`: category slugs per family
+
+## Project layout
+
+```
+src/
+  index.ts
+  types/api.ts          # Optional TS shapes for API JSON (not validated at runtime)
+  constants/            # payment_method list, category slugs
+  handlers/             # resources.ts, tools.ts
+  schemas/              # Zod: inputs only
+  services/             # API calls (search, products, invoices, orders, esims, misc)
+  utils/api/            # base (BitrefillApiError), authenticated (Bearer v2)
+```
 
 ## Development
 
-Install dependencies:
 ```bash
 pnpm install
+pnpm run build
+pnpm run typecheck
+pnpm run lint
 ```
 
-Build the server:
+### Smoke tests (this repo’s MCP only)
+
+Smoke tests always start **this package’s** server (`node build/index.js` after `pnpm run build`). They do **not** open `https://api.bitrefill.com/mcp` or any other remote MCP URL.
+
+**Recommended**: MCP client in-process (stdio to `build/index.js`):
+
 ```bash
 pnpm run build
+pnpm run smoke
 ```
 
-For development with auto-rebuild:
+Same as `pnpm run test-services` (alias).
+
+**Optional**: [MCP Inspector](https://modelcontextprotocol.io/docs/tools/inspector) CLI, still only against **this** server:
+
 ```bash
-pnpm run watch
+pnpm run build
+pnpm run smoke:inspector
 ```
 
-## Debugging
-
-Since MCP servers communicate over stdio, debugging can be challenging. We recommend using the [MCP Inspector](https://github.com/modelcontextprotocol/inspector), which is available as a package script:
+**All 18 tools** (Inspector CLI, summary lines, dummy ids on purpose):
 
 ```bash
+pnpm run test:inspector:all-tools
+```
+
+The Inspector uses **`--tool-arg key=value`** (repeat for multiple keys), not a single JSON blob. For nested data, use JSON in the value, e.g.  
+`--tool-arg 'products=[{"product_id":"x","value":10}]'`.
+
+Interactive UI (local server only):
+
+```bash
+pnpm run build
 pnpm run inspector
 ```
 
-The Inspector will provide a URL to access debugging tools in your browser.
-
-## Installation
-
-### Installing via Smithery
-
-To install Bitrefill for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@bitrefill/bitrefill-mcp-server):
+Examples:
 
 ```bash
-npx -y @smithery/cli install @bitrefill/bitrefill-mcp-server --client claude
+pnpm dlx @modelcontextprotocol/inspector node build/index.js --cli --method tools/call --tool-name ping
+pnpm dlx @modelcontextprotocol/inspector node build/index.js --cli --method tools/call --tool-name product-details --tool-arg id=test-gift-card-code
 ```
 
-### Claude Desktop
+## Client examples (self-hosted sample)
 
-Add the server config at:
-- MacOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-- Windows: `%APPDATA%/Claude/claude_desktop_config.json`
+> Reminder: for production, prefer the hosted `https://api.bitrefill.com/mcp` (OAuth) over the stdio config below.
+
+**Cursor / Claude-style MCP config**, pass the key in `env`:
 
 ```json
 {
@@ -159,74 +158,33 @@ Add the server config at:
       "command": "npx",
       "args": ["-y", "bitrefill-mcp-server"],
       "env": {
-        "BITREFILL_API_SECRET": "your_api_key_here",
-        "BITREFILL_API_ID": "your_api_id_here"
+        "BITREFILL_API_KEY": "your_api_key_here"
       }
     }
   }
 }
 ```
 
-### Cline
+**Docker**, e.g. `-e BITREFILL_API_KEY=...` or `--env-file .env`.
 
-1. Open the Cline extension settings
-2. Open "MCP Servers" tab
-3. Click on "Configure MCP Servers"
-4. Add the server config:
+**Hosted remote MCP** (no install, recommended):
 
 ```json
 {
   "mcpServers": {
-    "github.com/bitrefill/bitrefill-mcp-server": {
-      "command": "npx",
-      "args": ["-y", "bitrefill-mcp-server"],
-      "disabled": false,
-      "autoApprove": ["search", "detail", "categories"],
-      "env": {
-        "BITREFILL_API_ID": "your_api_id_here",
-        "BITREFILL_API_SECRET": "your_api_key_here"
-      }
+    "bitrefill": {
+      "url": "https://api.bitrefill.com/mcp"
     }
   }
 }
 ```
 
-Additional Cline configuration options:
-- `disabled`: Set to `false` to enable the server
-- `autoApprove`: List of tools that don't require explicit approval for each use
+## Documentation
 
-### Cursor
+- [Bitrefill docs](https://docs.bitrefill.com) ([llms index](https://docs.bitrefill.com/llms.txt))
+- [Bitrefill eCommerce MCP (hosted)](https://docs.bitrefill.com/docs/ecommerce-mcp): official remote server, recommended for production
+- [Setup guides](https://docs.bitrefill.com/docs/setup-guides): ChatGPT, Claude, Cursor
 
-1. Open the Cursor settings
-2. Open "Features" settings
-3. In the "MCP Servers" section, click on "Add new MCP Server"
-4. Choose a name, and select "command" as "Type"
-5. In the "Command" field, enter the following:
+## License
 
-```
-npx -y bitrefill-mcp-server
-```
-
-6. (Optional) If you're using the `create_invoice` tool, add environment variables:
-   - BITREFILL_API_SECRET: your_api_key_here
-   - BITREFILL_API_ID: your_api_id_here
-
-### Docker
-
-You can also run the server using Docker. First, build the image:
-
-```bash
-docker build -t bitrefill-mcp-server .
-```
-
-Then run the container:
-
-```bash
-docker run -e BITREFILL_API_SECRET=your_api_key_here -e BITREFILL_API_ID=your_api_id_here bitrefill-mcp-server
-```
-
-For development, you might want to mount your source code as a volume:
-
-```bash
-docker run -v $(pwd):/app --env-file .env bitrefill-mcp-server
-```
+MIT

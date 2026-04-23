@@ -1,6 +1,6 @@
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { ResourceTemplate, type McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { productCategories } from '../constants/categories.js';
+import { productCategories, categorySlugs } from '../constants/categories.js';
 import { paymentMethods } from '../constants/payment_methods.js';
 
 type ProductType = keyof typeof productCategories;
@@ -9,15 +9,7 @@ function isProductType(value: unknown): value is ProductType {
     return typeof value === 'string' && Object.prototype.hasOwnProperty.call(productCategories, value);
 }
 
-/**
- * Register resource handlers with the server
- * @param server - MCP server instance
- */
 export function registerResourceHandlers(server: McpServer): void {
-    /**
-     * Static resource for payment methods
-     * Exposes all available payment methods
-     */
     server.registerResource(
         'payment-methods',
         'bitrefill://payment-methods',
@@ -37,16 +29,31 @@ export function registerResourceHandlers(server: McpServer): void {
         })
     );
 
-    /**
-     * Static resource for product types
-     * Exposes all available product types
-     */
+    server.registerResource(
+        'category-slugs',
+        'bitrefill://category-slugs',
+        {
+            title: 'B2B category slugs',
+            description: 'Valid `category` filter values (comma-separated) for GET /products and GET /products/search',
+            mimeType: 'application/json',
+        },
+        async (uri) => ({
+            contents: [
+                {
+                    uri: uri.href,
+                    mimeType: 'application/json',
+                    text: JSON.stringify({ categories: [...categorySlugs] }, null, 2),
+                },
+            ],
+        })
+    );
+
     server.registerResource(
         'product-types',
         'bitrefill://product-types',
         {
             title: 'Product types',
-            description: 'List of product type keys (e.g. gift cards, mobile top-up)',
+            description: 'High-level product families mapped to B2B category slugs (gift_card, esim, phone_refill, …)',
             mimeType: 'application/json',
         },
         async (uri) => ({
@@ -66,10 +73,6 @@ export function registerResourceHandlers(server: McpServer): void {
         })
     );
 
-    /**
-     * Dynamic resource for categories of a specific product type
-     * Returns categories for the requested product type
-     */
     server.registerResource(
         'product-categories',
         new ResourceTemplate('bitrefill://product-types/{productType}', {
