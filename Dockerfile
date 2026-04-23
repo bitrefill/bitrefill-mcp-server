@@ -1,5 +1,5 @@
-# Use Node.js 21 base image
-FROM node:21-alpine AS builder
+# Use Node.js 24 LTS base image
+FROM node:24.15.0-alpine AS builder
 
 # Enable pnpm via corepack
 RUN corepack enable
@@ -17,7 +17,7 @@ RUN pnpm install --frozen-lockfile
 RUN pnpm run build
 
 # Use a smaller base image for the release
-FROM node:21-slim AS release
+FROM node:24.15.0-slim AS release
 
 # Enable pnpm via corepack
 RUN corepack enable
