@@ -23,6 +23,9 @@
     "build": "tsc && node -e \"require('fs').chmodSync('build/index.js', '755')\"",
     "prepare": "pnpm run build",
     "watch": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --cache --cache-location .cache/eslintcache",
+    "lint:ci": "eslint . --cache --cache-location .cache/eslintcache --cache-strategy content",
     "inspector": "pnpm dlx @modelcontextprotocol/inspector build/index.js",
     "test-services": "node test-services.js"
   },
@@ -41,6 +44,14 @@
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "eslint": "^8.57.1",
+    "eslint-config-bitrefill": "2.1.0",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-n": "^16.6.2",
+    "eslint-plugin-promise": "^6.6.0",
+    "eslint-plugin-security": "^1.7.1",
     "typescript": "^5.3.3"
   }
 }
