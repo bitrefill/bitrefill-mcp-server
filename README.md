@@ -113,17 +113,17 @@ The `create_invoice` tool will only be available if the API credentials are set.
 
 Install dependencies:
 ```bash
-npm install
+pnpm install
 ```
 
 Build the server:
 ```bash
-npm run build
+pnpm run build
 ```
 
 For development with auto-rebuild:
 ```bash
-npm run watch
+pnpm run watch
 ```
 
 ## Debugging
@@ -131,7 +131,7 @@ npm run watch
 Since MCP servers communicate over stdio, debugging can be challenging. We recommend using the [MCP Inspector](https://github.com/modelcontextprotocol/inspector), which is available as a package script:
 
 ```bash
-npm run inspector
+pnpm run inspector
 ```
 
 The Inspector will provide a URL to access debugging tools in your browser.

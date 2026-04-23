@@ -1,6 +1,9 @@
 # Use Node.js 21 base image
 FROM node:21-alpine AS builder
 
+# Enable pnpm via corepack
+RUN corepack enable
+
 # Set working directory
 WORKDIR /app
 
@@ -8,13 +11,16 @@ WORKDIR /app
 COPY . .
 
 # Install all dependencies including dev dependencies
-RUN npm ci
+RUN pnpm install --frozen-lockfile
 
 # Build the TypeScript files
-RUN npm run build
+RUN pnpm run build
 
 # Use a smaller base image for the release
 FROM node:21-slim AS release
+
+# Enable pnpm via corepack
+RUN corepack enable
 
 # Set working directory
 WORKDIR /app
@@ -22,10 +28,10 @@ WORKDIR /app
 # Copy only the necessary files from builder
 COPY --from=builder /app/build /app/build
 COPY --from=builder /app/package.json /app/package.json
-COPY --from=builder /app/package-lock.json /app/package-lock.json
+COPY --from=builder /app/pnpm-lock.yaml /app/pnpm-lock.yaml
 
 # Install only production dependencies without running prepare script
-RUN npm ci --omit=dev --ignore-scripts
+RUN pnpm install --prod --frozen-lockfile --ignore-scripts
 
 # Set environment variable for Node.js
 ENV NODE_ENV=production
