@@ -1,14 +1,14 @@
 /**
  * Base API client with common functionality
  */
-import { logError } from "../index.js";
+import { logError } from '../index.js';
 
 /**
  * Default headers for API requests
  */
 export const DEFAULT_HEADERS: HeadersInit = {
-  accept: "application/json",
-  "accept-language": "en-US,en;q=0.9",
+    accept: 'application/json',
+    'accept-language': 'en-US,en;q=0.9',
 };
 
 /**
@@ -31,18 +31,18 @@ export abstract class BaseApiClient {
    * @returns Query string (including ? prefix if params exist)
    */
   protected buildQueryString(params?: Record<string, any>): string {
-    if (!params) return '';
-    
-    const searchParams = new URLSearchParams();
-    
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        searchParams.append(key, String(value));
-      }
-    });
-    
-    const queryString = searchParams.toString();
-    return queryString ? `?${queryString}` : '';
+      if (!params) return '';
+
+      const searchParams = new URLSearchParams();
+
+      Object.entries(params).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+              searchParams.append(key, String(value));
+          }
+      });
+
+      const queryString = searchParams.toString();
+      return queryString ? `?${queryString}` : '';
   }
 
   /**
@@ -53,30 +53,30 @@ export abstract class BaseApiClient {
    * @throws Error if the request fails
    */
   protected async makeRequest<T>(
-    endpoint: string,
-    options: RequestInit = {}
+      endpoint: string,
+      options: RequestInit = {}
   ): Promise<T> {
-    const url = this.buildUrl(endpoint);
-    
-    try {
+      const url = this.buildUrl(endpoint);
+
+      try {
       // Set default headers if not provided
-      if (!options.headers) {
-        options.headers = DEFAULT_HEADERS;
-      }
+          if (!options.headers) {
+              options.headers = DEFAULT_HEADERS;
+          }
 
-      const response = await fetch(url, options);
+          const response = await fetch(url, options);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`API request failed with status ${response.status}: ${errorText}`);
-      }
+          if (!response.ok) {
+              const errorText = await response.text();
+              throw new Error(`API request failed with status ${response.status}: ${errorText}`);
+          }
 
-      return (await response.json()) as T;
-    } catch (error) {
+          return (await response.json()) as T;
+      } catch (error) {
       // Log the error but rethrow it for the caller to handle
-      this.handleError(error);
-      throw error;
-    }
+          this.handleError(error);
+          throw error;
+      }
   }
 
   /**
@@ -85,15 +85,15 @@ export abstract class BaseApiClient {
    * @returns Complete URL
    */
   protected buildUrl(endpoint: string): string {
-    // Remove leading slash from endpoint if present
-    const cleanEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
-    
-    // Ensure baseUrl ends with a slash
-    const baseWithSlash = this.baseUrl.endsWith('/') 
-      ? this.baseUrl 
-      : `${this.baseUrl}/`;
-    
-    return `${baseWithSlash}${cleanEndpoint}`;
+      // Remove leading slash from endpoint if present
+      const cleanEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
+
+      // Ensure baseUrl ends with a slash
+      const baseWithSlash = this.baseUrl.endsWith('/')
+          ? this.baseUrl
+          : `${this.baseUrl}/`;
+
+      return `${baseWithSlash}${cleanEndpoint}`;
   }
 
   /**
@@ -101,9 +101,9 @@ export abstract class BaseApiClient {
    * @param error - Error to handle
    */
   protected handleError(error: unknown): void {
-    logError(
-      error instanceof Error ? error : new Error(String(error)),
-      this.context
-    );
+      logError(
+          error instanceof Error ? error : new Error(String(error)),
+          this.context
+      );
   }
 }
