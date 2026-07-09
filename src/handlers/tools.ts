@@ -10,6 +10,7 @@ import { ProductIdInput } from '../schemas/detail.js';
 import { BuyProductsInput, InvoiceListInput, InvoiceIdInput } from '../schemas/invoice.js';
 import { OrderListInput, OrderIdInput } from '../schemas/order.js';
 import { CheckPhoneNumberInput } from '../schemas/misc.js';
+import { ResolveSpendIntentInput } from '../schemas/spend-intent.js';
 import {
     CreateEsimInvoiceInput,
     EsimListInput,
@@ -17,6 +18,7 @@ import {
     EsimIdInput,
     EsimInvoiceIdInput,
 } from '../schemas/esim.js';
+import { SpendIntentService } from '../services/spendIntent.js';
 
 function jsonText(data: unknown): { type: 'text'; text: string } {
     return { type: 'text', text: JSON.stringify(data, null, 2) };
@@ -62,6 +64,17 @@ export function registerToolHandlers(server: McpServer): void {
             inputSchema: SearchProductsInput,
         },
         (args) => runTool(() => SearchService.searchProducts(args))
+    );
+
+    server.registerTool(
+        'resolve-spend-intent',
+        {
+            title: 'Resolve spend intent',
+            description:
+                'Map a broad real-world user goal (travel planning, errands, gifts, subscriptions, gaming, shopping) to practical Bitrefill-purchasable needs and product candidates. Use this when the user did not explicitly ask for Bitrefill but the task may include things that can be bought, funded, or prepared through Bitrefill. This tool only plans; buy-products remains the explicit purchase boundary.',
+            inputSchema: ResolveSpendIntentInput,
+        },
+        (args) => runTool(() => SpendIntentService.resolveSpendIntent(args))
     );
 
     server.registerTool(

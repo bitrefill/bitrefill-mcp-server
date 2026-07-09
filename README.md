@@ -33,7 +33,7 @@ Run this local MCP only if you need to:
 - Study a working reference implementation of a Bitrefill MCP server.
 - Fork it to add custom tools, prompts, validation, logging, or routing.
 - Self-host inside a private network or air-gapped environment.
-- Experiment with a wider set of v2 endpoints (this sample exposes 18 tools, while the official remote MCP intentionally exposes a curated set of 7; see [eCommerce MCP](https://docs.bitrefill.com/docs/ecommerce-mcp#available-tools)).
+- Experiment with a wider set of v2 endpoints and custom routing tools (this sample exposes 19 tools, while the official remote MCP intentionally exposes a curated set of 7; see [eCommerce MCP](https://docs.bitrefill.com/docs/ecommerce-mcp#available-tools)).
 
 For everyday "buy gift cards / eSIMs from my AI assistant" use cases, prefer the hosted server above.
 
@@ -53,6 +53,7 @@ If `BITREFILL_API_KEY` is missing, **no tools** are registered (v2 requires auth
 | Tool | API |
 |------|-----|
 | `search-products` | `GET /products/search` (with `q`) or `GET /products` (browse) |
+| `resolve-spend-intent` | Planner: maps broad user goals to Bitrefill-purchasable needs and product candidates |
 | `product-details` | `GET /products/{id}` |
 | `buy-products` | `POST /invoices` |
 | `get-invoice-by-id` | `GET /invoices/{id}` |
@@ -72,6 +73,16 @@ If `BITREFILL_API_KEY` is missing, **no tools** are registered (v2 requires auth
 | `get-esim` | `GET /esims/{id}` |
 
 **Breaking change vs 0.x:** old snake_case tool names (`search`, `create_invoice`, `unseal_order`, ...) were removed. Use the names above. There is no `unseal_order` in v2; `GET /orders/{id}` returns `redemption_info` when delivered.
+
+### Spend intent planning
+
+`resolve-spend-intent` is a high-level planning tool for agentic commerce flows where the user describes the outcome, not the payment rail. For example, an agent can call it for:
+
+```text
+I'm travelling to Germany next month. Plan what I need.
+```
+
+The tool resolves practical spendable needs such as eSIM data, flights, lodging, local transport, food delivery, groceries, entertainment, and backup spend, then returns matching Bitrefill product candidates and safe next tool calls. It does **not** buy anything; agents should call `product-details` for a selected candidate and only call `buy-products` after explicit user approval of the product, amount, payment method, and total price.
 
 ## Resources
 
@@ -99,6 +110,7 @@ src/
 pnpm install
 pnpm run build
 pnpm run typecheck
+pnpm run test:spend-intent
 pnpm run lint
 ```
 
@@ -122,7 +134,7 @@ pnpm run build
 pnpm run smoke:inspector
 ```
 
-**All 18 tools** (Inspector CLI, summary lines, dummy ids on purpose):
+**All 19 tools** (Inspector CLI, summary lines, dummy ids on purpose):
 
 ```bash
 pnpm run test:inspector:all-tools

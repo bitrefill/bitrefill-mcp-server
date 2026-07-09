@@ -24,6 +24,7 @@
     "prepare": "pnpm run build",
     "watch": "tsc --watch",
     "typecheck": "tsc --noEmit",
+    "test:spend-intent": "pnpm run build && node scripts/test-spend-intent.mjs",
     "lint": "eslint . --cache --cache-location .cache/eslintcache",
     "lint:ci": "eslint . --cache --cache-location .cache/eslintcache --cache-strategy content",
     "inspector": "pnpm dlx @modelcontextprotocol/inspector node build/index.js"
